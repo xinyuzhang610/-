@@ -1,5 +1,10 @@
 # 环境配置 Implementation Plan
 
+> [!NOTE]
+> This document may not reflect the current implementation.
+> See the final report for up-to-date state:
+> [Final Report](../reports/environment-setup.md)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use compose:subagent (recommended) or compose:execute to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 配置统一的Vue3 + Element Plus前端和FastAPI后端开发环境，确保团队成员克隆后即可使用相同环境进行开发
