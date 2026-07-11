@@ -28,10 +28,12 @@
 
 ## 快速开始
 
+详细环境配置请参考：[环境配置指南](docs/环境配置指南.md)
+
 ### 1. 克隆项目
 ```bash
-git clone <repository-url>
-cd zjiaotong
+git clone https://github.com/xinyuzhang610/-.git
+cd -
 ```
 
 ### 2. 前端开发
