@@ -1,61 +1,89 @@
 <template>
-  <div class="auth-container">
-    <!-- 左侧插画 -->
-    <div class="auth-illustration">
-      <div class="illustration-content">
-        <div class="illustration-icon">🎓</div>
-        <h2 class="illustration-title">智教通</h2>
-        <p class="illustration-desc">AI智能体教学辅助平台</p>
-        <p class="illustration-quote">"让AI赋能每一堂课"</p>
-      </div>
-    </div>
-
-    <!-- 右侧表单 -->
-    <div class="auth-form">
-      <div class="form-header">
-        <h1 class="form-title">欢迎回来</h1>
-        <p class="form-subtitle">登录智教通</p>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-icon">🏠</div>
+        <h1 class="login-title">智教通</h1>
+        <p class="login-subtitle">AI智能体教学辅助平台</p>
       </div>
 
-      <el-form
-        ref="loginFormRef"
-        :model="loginForm"
-        :rules="loginRules"
-        class="login-form"
-      >
-        <el-form-item prop="username">
-          <el-input
-            v-model="loginForm.username"
-            placeholder="用户名"
-            size="large"
-          />
-        </el-form-item>
+      <!-- 身份选择 -->
+      <div class="role-selection">
+        <div
+          class="role-card"
+          :class="{ active: selectedRole === 'teacher' }"
+          @click="selectRole('teacher')"
+        >
+          <div class="role-icon">👨‍🏫</div>
+          <div class="role-name">我是教师</div>
+          <div class="role-desc">创建工具管理</div>
+        </div>
+        <div
+          class="role-card"
+          :class="{ active: selectedRole === 'student' }"
+          @click="selectRole('student')"
+        >
+          <div class="role-icon">👨‍🎓</div>
+          <div class="role-name">我是学生</div>
+          <div class="role-desc">使用工具学习</div>
+        </div>
+      </div>
 
-        <el-form-item prop="password">
-          <el-input
-            v-model="loginForm.password"
-            type="password"
-            placeholder="密码"
-            size="large"
-            show-password
-            @keyup.enter="handleLogin"
-          />
-        </el-form-item>
+      <!-- 教师登录表单 -->
+      <div v-if="selectedRole === 'teacher'" class="login-form-area">
+        <el-form
+          ref="loginFormRef"
+          :model="loginForm"
+          :rules="loginRules"
+          class="login-form"
+        >
+          <el-form-item prop="username">
+            <el-input
+              v-model="loginForm.username"
+              placeholder="请输入用户名"
+              size="large"
+            />
+          </el-form-item>
 
+          <el-form-item prop="password">
+            <el-input
+              v-model="loginForm.password"
+              type="password"
+              placeholder="请输入密码"
+              size="large"
+              show-password
+              @keyup.enter="handleLogin"
+            />
+          </el-form-item>
+
+          <el-button
+            type="primary"
+            size="large"
+            class="login-btn"
+            :loading="loading"
+            @click="handleLogin"
+          >
+            登 录
+          </el-button>
+        </el-form>
+
+        <div class="form-footer">
+          <span>还没有账号？</span>
+          <router-link to="/register" class="register-link">立即注册</router-link>
+        </div>
+      </div>
+
+      <!-- 学生入口 -->
+      <div v-if="selectedRole === 'student'" class="student-entry">
+        <p class="entry-desc">无需注册，直接进入工具广场开始学习</p>
         <el-button
           type="primary"
           size="large"
-          class="login-btn"
-          :loading="loading"
-          @click="handleLogin"
+          class="entry-btn"
+          @click="enterStudent"
         >
-          登录
+          进入工具广场
         </el-button>
-      </el-form>
-
-      <div class="form-footer">
-        <span>还没有账号？</span>
-        <router-link to="/register" class="register-link">立即注册 →</router-link>
       </div>
     </div>
   </div>
@@ -69,6 +97,7 @@ import { ElMessage } from 'element-plus'
 const router = useRouter()
 const loginFormRef = ref(null)
 const loading = ref(false)
+const selectedRole = ref('')
 
 // 登录表单数据
 const loginForm = reactive({
@@ -87,18 +116,19 @@ const loginRules = {
   ]
 }
 
+// 选择身份
+const selectRole = (role) => {
+  selectedRole.value = role
+}
+
 // 处理登录
 const handleLogin = async () => {
   try {
-    // 验证表单
     await loginFormRef.value.validate()
-
     loading.value = true
 
     // TODO: 调用后端登录接口
-    // 模拟登录成功
     setTimeout(() => {
-      // 存储token
       localStorage.setItem('token', 'mock-token')
       localStorage.setItem('userRole', 'teacher')
       localStorage.setItem('userName', '张老师')
@@ -108,91 +138,114 @@ const handleLogin = async () => {
       loading.value = false
     }, 1000)
   } catch (error) {
-    // 表单验证失败
     console.log('表单验证失败:', error)
   }
+}
+
+// 学生进入工具广场
+const enterStudent = () => {
+  localStorage.setItem('userRole', 'student')
+  router.push('/student/plaza')
 }
 </script>
 
 <style scoped>
-.auth-container {
-  display: flex;
+.login-container {
   min-height: 100vh;
-}
-
-/* 左侧插画 */
-.auth-illustration {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-chip-bg);
-  padding: var(--space-2xl);
-  animation: fadeInLeft 0.5s var(--ease-out);
+  background: var(--color-bg);
+  padding: 20px;
+  animation: fadeIn 0.5s var(--ease-out);
 }
 
-.illustration-content {
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  box-shadow: var(--shadow-lg);
+}
+
+.login-header {
   text-align: center;
+  margin-bottom: 32px;
 }
 
-.illustration-icon {
-  font-size: 80px;
-  margin-bottom: var(--space-lg);
+.login-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
 }
 
-.illustration-title {
+.login-title {
   font-family: var(--font-heading);
-  font-size: 36px;
+  font-size: 28px;
   font-weight: 600;
   color: var(--color-ink);
-  margin-bottom: var(--space-sm);
+  margin-bottom: 8px;
 }
 
-.illustration-desc {
+.login-subtitle {
   font-family: var(--font-body);
-  font-size: 16px;
+  font-size: 14px;
   color: var(--color-ink-soft);
-  margin-bottom: var(--space-xl);
 }
 
-.illustration-quote {
-  font-family: var(--font-title);
-  font-size: 18px;
-  font-style: italic;
-  color: var(--color-ink);
+/* 身份选择 */
+.role-selection {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
 }
 
-/* 右侧表单 */
-.auth-form {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: var(--space-2xl);
-  max-width: 500px;
-  animation: fadeInRight 0.5s var(--ease-out) 0.2s both;
+.role-card {
+  padding: 16px 12px;
+  border: 2px solid var(--color-chip-bg);
+  border-radius: var(--radius-md);
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--duration-normal) ease;
 }
 
-.form-header {
-  margin-bottom: var(--space-2xl);
+.role-card:hover {
+  border-color: var(--color-ink);
+  transform: translateY(-2px);
 }
 
-.form-title {
-  font-family: var(--font-heading);
+.role-card.active {
+  border-color: var(--color-ink);
+  background: var(--color-chip-bg);
+}
+
+.role-icon {
   font-size: 32px;
-  font-weight: 600;
-  color: var(--color-ink);
-  margin-bottom: var(--space-sm);
+  margin-bottom: 8px;
 }
 
-.form-subtitle {
+.role-name {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-ink);
+  margin-bottom: 4px;
+}
+
+.role-desc {
   font-family: var(--font-body);
-  font-size: 16px;
+  font-size: 12px;
   color: var(--color-ink-soft);
+}
+
+/* 登录表单 */
+.login-form-area {
+  animation: slideUp 0.3s var(--ease-out);
 }
 
 .login-form {
-  margin-bottom: var(--space-lg);
+  margin-bottom: 24px;
 }
 
 .login-form :deep(.el-input__wrapper) {
@@ -224,7 +277,7 @@ const handleLogin = async () => {
 .login-btn:hover {
   background: var(--color-primary-hover);
   border-color: var(--color-primary-hover);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
@@ -240,61 +293,72 @@ const handleLogin = async () => {
   margin-left: var(--space-xs);
   text-decoration: none;
   font-weight: 500;
-  transition: color var(--duration-fast) ease;
 }
 
 .register-link:hover {
   color: var(--color-primary-hover);
 }
 
+/* 学生入口 */
+.student-entry {
+  text-align: center;
+  animation: slideUp 0.3s var(--ease-out);
+}
+
+.entry-desc {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-ink-soft);
+  margin-bottom: 24px;
+}
+
+.entry-btn {
+  width: 100%;
+  border-radius: var(--radius-full);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 500;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  height: 48px;
+  transition: all var(--duration-fast) ease;
+}
+
+.entry-btn:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
 /* 动画 */
-@keyframes fadeInLeft {
+@keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateX(-20px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
   }
 }
 
-@keyframes fadeInRight {
+@keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateX(20px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(0);
   }
 }
 
 /* 响应式 */
 @media (max-width: 768px) {
-  .auth-container {
-    flex-direction: column;
+  .login-card {
+    padding: 24px;
   }
 
-  .auth-illustration {
-    min-height: 200px;
-    padding: var(--space-lg);
-  }
-
-  .illustration-icon {
-    font-size: 60px;
-  }
-
-  .illustration-title {
-    font-size: 28px;
-  }
-
-  .auth-form {
-    max-width: 100%;
-    padding: var(--space-lg);
-  }
-
-  .form-title {
+  .login-title {
     font-size: 24px;
   }
 }

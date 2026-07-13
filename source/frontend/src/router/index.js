@@ -138,7 +138,7 @@ const routes = [
     meta: { requiresAuth: false }
   },
 
-  // 首页（小米风格落地页）
+  // 首页（水墨中国风落地页）
   {
     path: '/',
     name: 'Home',
