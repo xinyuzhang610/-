@@ -19,17 +19,21 @@
     <div class="category-section">
       <h2 class="section-title">📚 文科专区</h2>
       <div class="tool-grid">
-        <div
-          v-for="tool in liberalArtsTools"
-          :key="tool.id"
-          class="tool-card"
-          @click="useTool(tool)"
-        >
-          <div class="tool-icon">{{ tool.icon }}</div>
-          <h3 class="tool-name">{{ tool.name }}</h3>
-          <p class="tool-subject">{{ tool.subject }} · 文科</p>
-          <el-button type="primary" size="small" class="use-btn">立即使用</el-button>
-        </div>
+        <transition-group name="stagger" tag="div" class="tool-grid-inner"
+                          @before-enter="beforeEnter" @enter="enter">
+          <div
+            v-for="(tool, index) in liberalArtsTools"
+            :key="tool.id"
+            class="tool-card"
+            :data-index="index"
+            @click="useTool(tool)"
+          >
+            <div class="tool-icon">{{ tool.icon }}</div>
+            <h3 class="tool-name">{{ tool.name }}</h3>
+            <p class="tool-subject">{{ tool.subject }} · 文科</p>
+            <el-button type="primary" size="small" class="use-btn">立即使用</el-button>
+          </div>
+        </transition-group>
       </div>
     </div>
 
@@ -37,17 +41,21 @@
     <div class="category-section">
       <h2 class="section-title">🔬 理科专区</h2>
       <div class="tool-grid">
-        <div
-          v-for="tool in scienceTools"
-          :key="tool.id"
-          class="tool-card"
-          @click="useTool(tool)"
-        >
-          <div class="tool-icon">{{ tool.icon }}</div>
-          <h3 class="tool-name">{{ tool.name }}</h3>
-          <p class="tool-subject">{{ tool.subject }} · 理科</p>
-          <el-button type="primary" size="small" class="use-btn">立即使用</el-button>
-        </div>
+        <transition-group name="stagger" tag="div" class="tool-grid-inner"
+                          @before-enter="beforeEnter" @enter="enter">
+          <div
+            v-for="(tool, index) in scienceTools"
+            :key="tool.id"
+            class="tool-card"
+            :data-index="index"
+            @click="useTool(tool)"
+          >
+            <div class="tool-icon">{{ tool.icon }}</div>
+            <h3 class="tool-name">{{ tool.name }}</h3>
+            <p class="tool-subject">{{ tool.subject }} · 理科</p>
+            <el-button type="primary" size="small" class="use-btn">立即使用</el-button>
+          </div>
+        </transition-group>
       </div>
     </div>
 
@@ -135,6 +143,22 @@ const useTool = (tool) => {
 const goToPlatform = () => {
   ElMessage.info('即将跳转到师大智能体平台')
 }
+
+// Stagger动画
+const beforeEnter = (el) => {
+  el.style.opacity = 0
+  el.style.transform = 'translateY(16px)'
+}
+
+const enter = (el, done) => {
+  const delay = el.dataset.index * 50
+  setTimeout(() => {
+    el.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+    el.style.opacity = 1
+    el.style.transform = 'translateY(0)'
+    done()
+  }, delay)
+}
 </script>
 
 <style scoped>
@@ -175,7 +199,7 @@ const goToPlatform = () => {
 }
 
 .section-title {
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-size: 20px;
   font-weight: 600;
   color: var(--color-ink);
@@ -187,6 +211,10 @@ const goToPlatform = () => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 16px;
+}
+
+.tool-grid-inner {
+  display: contents;
 }
 
 .tool-card {
@@ -210,7 +238,7 @@ const goToPlatform = () => {
 }
 
 .tool-name {
-  font-family: var(--font-sans);
+  font-family: var(--font-title);
   font-size: 15px;
   font-weight: 600;
   color: var(--color-ink);
@@ -218,7 +246,7 @@ const goToPlatform = () => {
 }
 
 .tool-subject {
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 12px;
   color: var(--color-ink-soft);
   margin-bottom: 12px;
@@ -261,7 +289,7 @@ const goToPlatform = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-sans);
+  font-family: var(--font-ui);
   font-size: 13px;
   font-weight: 600;
   color: var(--color-ink-soft);
@@ -280,13 +308,13 @@ const goToPlatform = () => {
 
 .hot-name {
   flex: 1;
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 15px;
   color: var(--color-ink);
 }
 
 .hot-count {
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 13px;
   color: var(--color-ink-soft);
 }
@@ -301,14 +329,14 @@ const goToPlatform = () => {
 }
 
 .more-desc {
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 14px;
   color: var(--color-ink-soft);
   margin-bottom: 16px;
 }
 
 .more-actions {
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 14px;
   color: var(--color-ink-soft);
 }

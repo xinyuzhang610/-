@@ -133,7 +133,7 @@ const sendMessage = async () => {
 }
 
 .chat-title {
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-size: 20px;
   font-weight: 600;
   color: var(--color-ink);
@@ -141,7 +141,7 @@ const sendMessage = async () => {
 }
 
 .chat-desc {
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 13px;
   color: var(--color-ink-soft);
 }
@@ -180,7 +180,7 @@ const sendMessage = async () => {
 }
 
 .message-text {
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 14px;
   line-height: 1.6;
   color: var(--color-ink);
@@ -199,7 +199,7 @@ const sendMessage = async () => {
 }
 
 .message-time {
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 11px;
   color: var(--color-ink-soft);
   margin-top: 4px;

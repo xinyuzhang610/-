@@ -120,6 +120,12 @@ const routes = [
         name: 'StudentRecords',
         component: () => import('../views/student/Records.vue'),
         meta: { title: '学习记录' }
+      },
+      {
+        path: 'guidance',
+        name: 'StudentGuidance',
+        component: () => import('../views/student/Guidance.vue'),
+        meta: { title: '需求引导' }
       }
     ]
   },
