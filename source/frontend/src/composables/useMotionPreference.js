@@ -1,19 +1,20 @@
 import { computed, onScopeDispose, ref } from 'vue'
 
 export function useMotionPreference() {
-  const prefersReducedMotion = ref(false)
-  const canAnimate = computed(() => !prefersReducedMotion.value)
+  const reduced = ref(false)
+  const prefersReducedMotion = reduced
+  const canAnimate = computed(() => !reduced.value)
 
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-    return { canAnimate, prefersReducedMotion }
+    return { reduced, canAnimate, prefersReducedMotion }
   }
 
   const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
   const updatePreference = (event) => {
-    prefersReducedMotion.value = event.matches
+    reduced.value = event.matches
   }
 
-  prefersReducedMotion.value = mediaQuery.matches
+  reduced.value = mediaQuery.matches
 
   if (typeof mediaQuery.addEventListener === 'function') {
     mediaQuery.addEventListener('change', updatePreference)
@@ -23,5 +24,5 @@ export function useMotionPreference() {
     onScopeDispose(() => mediaQuery.removeListener(updatePreference))
   }
 
-  return { canAnimate, prefersReducedMotion }
+  return { reduced, canAnimate, prefersReducedMotion }
 }

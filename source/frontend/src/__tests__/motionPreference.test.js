@@ -26,11 +26,13 @@ describe('useMotionPreference', () => {
     const scope = effectScope()
     const preference = scope.run(() => useMotionPreference())
 
+    expect(preference.reduced.value).toBe(true)
     expect(preference.canAnimate.value).toBe(false)
     expect(matchMedia).toHaveBeenCalledWith('(prefers-reduced-motion: reduce)')
     expect(addEventListener).toHaveBeenCalledWith('change', expect.any(Function))
 
     changeHandler({ matches: false })
+    expect(preference.reduced.value).toBe(false)
     expect(preference.canAnimate.value).toBe(true)
 
     scope.stop()
