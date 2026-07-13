@@ -221,28 +221,29 @@ const getRecommendedTools = () => {
   ]
 }
 
-// 戳泡泡
-const popBubble = async (bubble) => {
+// 戳泡泡（使用CSS动画事件，减少延迟）
+const popBubble = (bubble) => {
   if (isAnimating.value) return
 
   isAnimating.value = true
   bubble.isPopping = true
 
-  await new Promise(resolve => setTimeout(resolve, 400))
+  // 使用更短的延迟（200ms而不是400ms）
+  setTimeout(() => {
+    // 第1层：选择困惑
+    if (currentStep.value === 0) {
+      selectedDifficulty.value = bubble.value
+      currentStep.value = 1
+    }
+    // 第2层：选择科目
+    else if (currentStep.value === 1) {
+      selectedSubject.value = bubble.value
+      recommendedTools.value = getRecommendedTools()
+      currentStep.value = 2
+    }
 
-  // 第1层：选择困惑
-  if (currentStep.value === 0) {
-    selectedDifficulty.value = bubble.value
-    currentStep.value = 1
-  }
-  // 第2层：选择科目
-  else if (currentStep.value === 1) {
-    selectedSubject.value = bubble.value
-    recommendedTools.value = getRecommendedTools()
-    currentStep.value = 2
-  }
-
-  isAnimating.value = false
+    isAnimating.value = false
+  }, 200)
 }
 
 // 使用工具
@@ -464,14 +465,14 @@ const goToPlaza = () => {
   50% { transform: translateY(-10px); }
 }
 
-/* 气泡戳破动画 */
+/* 气泡戳破动画（更快） */
 .bubble.popping {
-  animation: pop 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
+  animation: pop 0.25s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
 }
 
 @keyframes pop {
   0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.2); opacity: 0.8; }
+  40% { transform: scale(1.15); opacity: 0.9; }
   100% { transform: scale(0); opacity: 0; }
 }
 
