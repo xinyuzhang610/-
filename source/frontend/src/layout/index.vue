@@ -2,60 +2,70 @@
   <el-container class="layout-container">
     <!-- 侧边栏 -->
     <el-aside :width="isCollapsed ? '64px' : '220px'" class="layout-aside">
-      <div class="logo-container">
-        <img src="../assets/logo.png" alt="智教通" class="logo-img" />
-        <span v-show="!isCollapsed" class="logo-text">智教通</span>
+      <div class="sidebar-content">
+        <div class="logo-container">
+          <img src="../assets/logo.png" alt="智教通" class="logo-img" />
+          <span v-show="!isCollapsed" class="logo-text">智教通</span>
+        </div>
+
+        <el-menu
+          :default-active="activeMenu"
+          :collapse="isCollapsed"
+          :router="true"
+          class="sidebar-menu"
+          background-color="#fcfaf8"
+          text-color="#26251e"
+          active-text-color="#26251e"
+        >
+          <!-- 教师端菜单 -->
+          <template v-if="userRole === 'teacher'">
+            <el-menu-item index="/teacher/home">
+              <el-icon><HomeFilled /></el-icon>
+              <template #title>需求引导</template>
+            </el-menu-item>
+            <el-menu-item index="/teacher/tools">
+              <el-icon><Tools /></el-icon>
+              <template #title>我的工具</template>
+            </el-menu-item>
+            <el-menu-item index="/teacher/dashboard">
+              <el-icon><DataLine /></el-icon>
+              <template #title>数据看板</template>
+            </el-menu-item>
+          </template>
+
+          <!-- 学生端菜单 -->
+          <template v-else>
+            <el-menu-item index="/student/plaza">
+              <el-icon><Grid /></el-icon>
+              <template #title>工具广场</template>
+            </el-menu-item>
+            <el-menu-item index="/student/chat">
+              <el-icon><ChatDotRound /></el-icon>
+              <template #title>AI问答</template>
+            </el-menu-item>
+            <el-menu-item index="/student/records">
+              <el-icon><Document /></el-icon>
+              <template #title>学习记录</template>
+            </el-menu-item>
+          </template>
+        </el-menu>
       </div>
 
-      <el-menu
-        :default-active="activeMenu"
-        :collapse="isCollapsed"
-        :router="true"
-        class="sidebar-menu"
-        background-color="#fcfaf8"
-        text-color="#26251e"
-        active-text-color="#26251e"
-      >
-        <!-- 教师端菜单 -->
-        <template v-if="userRole === 'teacher'">
-          <el-menu-item index="/teacher/home">
-            <el-icon><HomeFilled /></el-icon>
-            <template #title>需求引导</template>
-          </el-menu-item>
-          <el-menu-item index="/teacher/tools">
-            <el-icon><Tools /></el-icon>
-            <template #title>我的工具</template>
-          </el-menu-item>
-          <el-menu-item index="/teacher/dashboard">
-            <el-icon><DataLine /></el-icon>
-            <template #title>数据看板</template>
-          </el-menu-item>
-        </template>
-
-        <!-- 学生端菜单 -->
-        <template v-else>
-          <el-menu-item index="/student/plaza">
-            <el-icon><Grid /></el-icon>
-            <template #title>工具广场</template>
-          </el-menu-item>
-          <el-menu-item index="/student/chat">
-            <el-icon><ChatDotRound /></el-icon>
-            <template #title>AI问答</template>
-          </el-menu-item>
-          <el-menu-item index="/student/records">
-            <el-icon><Document /></el-icon>
-            <template #title>学习记录</template>
-          </el-menu-item>
-        </template>
-
-        <!-- 返回首页 -->
-        <div class="sidebar-bottom">
+      <!-- 返回首页 -->
+      <div class="sidebar-bottom">
+        <el-menu
+          :collapse="isCollapsed"
+          :router="true"
+          class="sidebar-menu-bottom"
+          background-color="#fcfaf8"
+          text-color="#26251e"
+        >
           <el-menu-item index="/" @click="goToHome">
             <el-icon><Back /></el-icon>
             <template #title>返回首页</template>
           </el-menu-item>
-        </div>
-      </el-menu>
+        </el-menu>
+      </div>
     </el-aside>
 
     <!-- 右侧内容区 -->
@@ -185,7 +195,13 @@ const goToHome = () => {
   border-right: 1px solid var(--color-chip-bg);
   transition: width 0.3s;
   overflow: hidden;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
 }
 
 .logo-container {
@@ -229,11 +245,8 @@ const goToHome = () => {
 }
 
 .sidebar-bottom {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
   border-top: 1px solid var(--color-chip-bg);
+  flex-shrink: 0;
 }
 
 /* 顶部头部 */
