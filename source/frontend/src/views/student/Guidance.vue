@@ -55,8 +55,8 @@
         </transition-group>
       </div>
 
-      <!-- 推荐工具区域（第5层） -->
-      <div v-if="currentStep === 4" class="recommend-section">
+      <!-- 推荐工具区域（第3层） -->
+      <div v-if="currentStep === 2" class="recommend-section">
         <div class="recommend-list">
           <div
             v-for="tool in recommendedTools"
@@ -91,12 +91,10 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-// 5层步骤配置
+// 3层步骤配置
 const steps = [
   { label: '学习困惑' },
-  { label: '具体问题' },
-  { label: '困难原因' },
-  { label: '确认需求' },
+  { label: '选择科目' },
   { label: '推荐工具' }
 ]
 
@@ -104,7 +102,6 @@ const steps = [
 const currentStep = ref(0)
 const selectedDifficulty = ref('')
 const selectedSubject = ref('')
-const selectedReason = ref('')
 const isAnimating = ref(false)
 
 // 当前标题
@@ -112,8 +109,6 @@ const currentTitle = computed(() => {
   const titles = [
     '🎓 你好呀，同学！',
     '📚 哪个科目让你头疼呢？',
-    '🤔 为什么会觉得难呢？',
-    '✨ 确认一下你的需求',
     '🎁 为你推荐这些工具！'
   ]
   return titles[currentStep.value]
@@ -124,8 +119,6 @@ const currentDesc = computed(() => {
   const descs = [
     '学习上遇到什么困难了？告诉我，我来帮你～',
     '告诉我具体是哪个科目的问题',
-    '了解原因才能更好地帮助你',
-    '看看我理解得对不对',
     '这些工具可以帮到你，点击开始体验吧～'
   ]
   return descs[currentStep.value]
@@ -136,27 +129,16 @@ const footerTip = computed(() => {
   const tips = [
     '点击一个气泡选择你遇到的困难',
     '点击选择具体的科目',
-    '点击选择困难的原因',
-    '点击确认或返回修改',
     '点击工具开始体验'
   ]
   return tips[currentStep.value]
 })
 
-// 第1层：学习困惑（10+个泡泡，3个核心）
+// 第1层：学习困惑（3个核心）
 const difficultyBubbles = [
   { id: 'd1', icon: '📖', label: '读不懂题', value: '读不懂题', colorClass: 'bubble-blue', isPopping: false },
   { id: 'd2', icon: '❌', label: '不会做题', value: '不会做题', colorClass: 'bubble-purple', isPopping: false },
-  { id: 'd3', icon: '😴', label: '没兴趣', value: '没兴趣', colorClass: 'bubble-pink', isPopping: false },
-  { id: 'd4', icon: '📝', label: '记不住', value: '记不住', colorClass: 'bubble-green', isPopping: false },
-  { id: 'd5', icon: '🤯', label: '太难了', value: '太难了', colorClass: 'bubble-orange', isPopping: false },
-  { id: 'd6', icon: '⏰', label: '时间不够', value: '时间不够', colorClass: 'bubble-yellow', isPopping: false },
-  { id: 'd7', icon: '😤', label: '容易粗心', value: '容易粗心', colorClass: 'bubble-blue', isPopping: false },
-  { id: 'd8', icon: '❓', label: '不会总结', value: '不会总结', colorClass: 'bubble-purple', isPopping: false },
-  { id: 'd9', icon: '📚', label: '基础差', value: '基础差', colorClass: 'bubble-green', isPopping: false },
-  { id: 'd10', icon: '😰', label: '考试紧张', value: '考试紧张', colorClass: 'bubble-pink', isPopping: false },
-  { id: 'd11', icon: '📱', label: '容易分心', value: '容易分心', colorClass: 'bubble-orange', isPopping: false },
-  { id: 'd12', icon: '🤷', label: '不知道学什么', value: '不知道学什么', colorClass: 'bubble-yellow', isPopping: false }
+  { id: 'd3', icon: '😴', label: '没兴趣', value: '没兴趣', colorClass: 'bubble-pink', isPopping: false }
 ]
 
 // 第2层：具体科目
@@ -166,71 +148,13 @@ const subjectBubbles = [
   { id: 's3', icon: '🔤', label: '英语', value: '英语', colorClass: 'bubble-pink', isPopping: false },
   { id: 's4', icon: '⚡', label: '物理', value: '物理', colorClass: 'bubble-green', isPopping: false },
   { id: 's5', icon: '🧪', label: '化学', value: '化学', colorClass: 'bubble-orange', isPopping: false },
-  { id: 's6', icon: '🌿', label: '生物', value: '生物', colorClass: 'bubble-yellow', isPopping: false },
-  { id: 's7', icon: '🌍', label: '历史', value: '历史', colorClass: 'bubble-blue', isPopping: false },
-  { id: 's8', icon: '🗺️', label: '地理', value: '地理', colorClass: 'bubble-purple', isPopping: false },
-  { id: 's9', icon: '⚖️', label: '政治', value: '政治', colorClass: 'bubble-green', isPopping: false }
-]
-
-// 第3层：困难原因
-const reasonBubbles = ref([])
-
-// 根据困惑和科目生成原因选项
-const getReasonBubbles = () => {
-  const difficulty = selectedDifficulty.value
-  const subject = selectedSubject.value
-
-  // 读不懂题的原因
-  if (difficulty === '读不懂题') {
-    return [
-      { id: 'r1', icon: '📝', label: '词汇量不够', value: '词汇量不够', colorClass: 'bubble-blue', isPopping: false },
-      { id: 'r2', icon: '📖', label: '题目太长', value: '题目太长', colorClass: 'bubble-purple', isPopping: false },
-      { id: 'r3', icon: '🤔', label: '不理解题意', value: '不理解题意', colorClass: 'bubble-pink', isPopping: false },
-      { id: 'r4', icon: '📊', label: '图表看不懂', value: '图表看不懂', colorClass: 'bubble-green', isPopping: false }
-    ]
-  }
-
-  // 不会做题的原因
-  if (difficulty === '不会做题') {
-    return [
-      { id: 'r1', icon: '📚', label: '知识点不熟', value: '知识点不熟', colorClass: 'bubble-blue', isPopping: false },
-      { id: 'r2', icon: '🧩', label: '不会举一反三', value: '不会举一反三', colorClass: 'bubble-purple', isPopping: false },
-      { id: 'r3', icon: '📋', label: '缺少方法', value: '缺少方法', colorClass: 'bubble-pink', isPopping: false },
-      { id: 'r4', icon: '⏰', label: '练习不够', value: '练习不够', colorClass: 'bubble-green', isPopping: false }
-    ]
-  }
-
-  // 没兴趣的原因
-  if (difficulty === '没兴趣') {
-    return [
-      { id: 'r1', icon: '😴', label: '内容太枯燥', value: '内容太枯燥', colorClass: 'bubble-blue', isPopping: false },
-      { id: 'r2', icon: '🎮', label: '想要趣味学习', value: '想要趣味学习', colorClass: 'bubble-purple', isPopping: false },
-      { id: 'r3', icon: '🎯', label: '看不到意义', value: '看不到意义', colorClass: 'bubble-pink', isPopping: false },
-      { id: 'r4', icon: '👨‍🏫', label: '教学方式不适应', value: '教学方式不适应', colorClass: 'bubble-green', isPopping: false }
-    ]
-  }
-
-  // 默认原因
-  return [
-    { id: 'r1', icon: '📚', label: '基础不扎实', value: '基础不扎实', colorClass: 'bubble-blue', isPopping: false },
-    { id: 'r2', icon: '⏰', label: '时间管理差', value: '时间管理差', colorClass: 'bubble-purple', isPopping: false },
-    { id: 'r3', icon: '🎯', label: '学习方法不对', value: '学习方法不对', colorClass: 'bubble-pink', isPopping: false },
-    { id: 'r4', icon: '💪', label: '需要更多练习', value: '需要更多练习', colorClass: 'bubble-green', isPopping: false }
-  ]
-}
-
-// 第4层：确认需求
-const confirmBubbles = [
-  { id: 'c1', icon: '✅', label: '是的，就是这样', value: 'confirm', colorClass: 'bubble-green', isPopping: false },
-  { id: 'c2', icon: '🔄', label: '重新选择', value: 'restart', colorClass: 'bubble-orange', isPopping: false }
+  { id: 's6', icon: '🌿', label: '生物', value: '生物', colorClass: 'bubble-yellow', isPopping: false }
 ]
 
 // 当前气泡列表
 const currentBubbles = computed(() => {
   if (currentStep.value === 0) return difficultyBubbles
   if (currentStep.value === 1) return subjectBubbles
-  if (currentStep.value === 2) return reasonBubbles.value
-  if (currentStep.value === 3) return confirmBubbles
   return []
 })
 
@@ -241,37 +165,59 @@ const recommendedTools = ref([])
 const getRecommendedTools = () => {
   const difficulty = selectedDifficulty.value
   const subject = selectedSubject.value
-  const reason = selectedReason.value
 
-  // 读不懂题 + 语文
-  if (difficulty === '读不懂题' && subject === '语文') {
+  // 读不懂题
+  if (difficulty === '读不懂题') {
+    if (subject === '语文') {
+      return [
+        { id: 1, icon: '📖', name: '阅读理解辅助', desc: '帮你分析文章结构，理解题意' },
+        { id: 2, icon: '🏮', name: '古诗词趣味赏析', desc: '用有趣的方式理解古诗词' }
+      ]
+    }
+    if (subject === '英语') {
+      return [
+        { id: 3, icon: '🔤', name: '英语单词卡片', desc: '帮你记忆单词' },
+        { id: 4, icon: '📖', name: '阅读理解辅助', desc: '帮你分析英文文章' }
+      ]
+    }
     return [
-      { id: 1, icon: '📖', name: '阅读理解辅助', desc: '帮你分析文章结构，理解题意' },
-      { id: 2, icon: '🏮', name: '古诗词趣味赏析', desc: '用有趣的方式理解古诗词' }
+      { id: 5, icon: '📖', name: '阅读理解辅助', desc: '帮你理解各种题目' },
+      { id: 6, icon: '📝', name: '名词解释器', desc: '帮你理解专业术语' }
     ]
   }
 
-  // 不会做题 + 数学
-  if (difficulty === '不会做题' && subject === '数学') {
+  // 不会做题
+  if (difficulty === '不会做题') {
+    if (subject === '数学') {
+      return [
+        { id: 7, icon: '🧮', name: '公式推导助手', desc: '一步步教你推导公式' },
+        { id: 8, icon: '🧠', name: '逻辑思维训练', desc: '提升解题思路' }
+      ]
+    }
+    if (subject === '物理' || subject === '化学') {
+      return [
+        { id: 9, icon: '🔬', name: '实验模拟讲解', desc: '帮你理解实验原理' },
+        { id: 10, icon: '💡', name: '概念辨析器', desc: '帮你区分易混淆概念' }
+      ]
+    }
     return [
-      { id: 3, icon: '🧮', name: '公式推导助手', desc: '一步步教你推导公式' },
-      { id: 4, icon: '🧠', name: '逻辑思维训练', desc: '提升解题思路' }
+      { id: 11, icon: '🧮', name: '公式推导助手', desc: '帮你理解公式原理' },
+      { id: 12, icon: '🧠', name: '逻辑思维训练', desc: '提升解题能力' }
     ]
   }
 
   // 没兴趣
   if (difficulty === '没兴趣') {
     return [
-      { id: 5, icon: '🎮', name: '趣味学习工具', desc: '让学习变得有趣' },
-      { id: 6, icon: '🌸', name: '诗词飞花令', desc: '边玩边学古诗词' }
+      { id: 13, icon: '🌸', name: '诗词飞花令', desc: '边玩边学古诗词' },
+      { id: 14, icon: '🎮', name: '趣味学习工具', desc: '让学习变得有趣' }
     ]
   }
 
   // 默认推荐
   return [
     { id: 1, icon: '🏮', name: '古诗词趣味赏析', desc: '用有趣的方式理解古诗词' },
-    { id: 3, icon: '🧮', name: '公式推导助手', desc: '一步步教你推导公式' },
-    { id: 5, icon: '✍️', name: '作文灵感助手', desc: '帮你打开写作思路' }
+    { id: 7, icon: '🧮', name: '公式推导助手', desc: '一步步教你推导公式' }
   ]
 }
 
@@ -292,26 +238,8 @@ const popBubble = async (bubble) => {
   // 第2层：选择科目
   else if (currentStep.value === 1) {
     selectedSubject.value = bubble.value
-    reasonBubbles.value = getReasonBubbles()
+    recommendedTools.value = getRecommendedTools()
     currentStep.value = 2
-  }
-  // 第3层：选择原因
-  else if (currentStep.value === 2) {
-    selectedReason.value = bubble.value
-    currentStep.value = 3
-  }
-  // 第4层：确认需求
-  else if (currentStep.value === 3) {
-    if (bubble.value === 'confirm') {
-      recommendedTools.value = getRecommendedTools()
-      currentStep.value = 4
-    } else {
-      // 重新开始
-      currentStep.value = 0
-      selectedDifficulty.value = ''
-      selectedSubject.value = ''
-      selectedReason.value = ''
-    }
   }
 
   isAnimating.value = false
@@ -449,7 +377,7 @@ const goToPlaza = () => {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 24px;
+  gap: 32px;
   padding: 16px 0;
 }
 
@@ -639,7 +567,7 @@ const goToPlaza = () => {
   }
 
   .bubble-grid {
-    gap: 16px;
+    gap: 20px;
   }
 }
 </style>
