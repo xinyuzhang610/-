@@ -4,7 +4,7 @@
     <el-aside :width="isCollapsed ? '64px' : '220px'" class="layout-aside">
       <div class="sidebar-content">
         <div class="logo-container">
-          <img src="../assets/logo.png" alt="智教通" class="logo-img" />
+          <img src="../assets/logo-temp.svg" alt="智教通" class="logo-img" />
           <span v-show="!isCollapsed" class="logo-text">智教通</span>
         </div>
 
