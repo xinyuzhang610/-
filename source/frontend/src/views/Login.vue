@@ -82,7 +82,7 @@
           class="entry-btn"
           @click="enterStudent"
         >
-          进入工具广场
+          开始学习之旅
         </el-button>
       </div>
     </div>
@@ -142,10 +142,10 @@ const handleLogin = async () => {
   }
 }
 
-// 学生进入工具广场
+// 学生进入需求引导
 const enterStudent = () => {
   localStorage.setItem('userRole', 'student')
-  router.push('/student/plaza')
+  router.push('/student/guidance')
 }
 </script>
 
