@@ -482,11 +482,11 @@ const initSectionInkEffects = () => {
     }
 
     function drawInk(x, y, r, alpha, seed) {
-      // 外层：淡墨
+      // 外层：淡墨（大面积扩散）
       const g1 = ctx.createRadialGradient(x, y, 0, x, y, r)
-      g1.addColorStop(0, `rgba(${INK_R}, ${INK_G}, ${INK_B}, ${0.35 * alpha})`)
-      g1.addColorStop(0.3, `rgba(${INK_R}, ${INK_G}, ${INK_B}, ${0.25 * alpha})`)
-      g1.addColorStop(0.6, `rgba(${INK_R}, ${INK_G}, ${INK_B}, ${0.1 * alpha})`)
+      g1.addColorStop(0, `rgba(${INK_R}, ${INK_G}, ${INK_B}, ${0.12 * alpha})`)
+      g1.addColorStop(0.2, `rgba(${INK_R}, ${INK_G}, ${INK_B}, ${0.08 * alpha})`)
+      g1.addColorStop(0.5, `rgba(${INK_R}, ${INK_G}, ${INK_B}, ${0.03 * alpha})`)
       g1.addColorStop(1, `rgba(${INK_R}, ${INK_G}, ${INK_B}, 0)`)
 
       ctx.fillStyle = g1
@@ -503,10 +503,11 @@ const initSectionInkEffects = () => {
       ctx.closePath()
       ctx.fill()
 
-      // 内层：浓墨（中心）
-      const g2 = ctx.createRadialGradient(x, y, 0, x, y, r * 0.4)
-      g2.addColorStop(0, `rgba(${INK_R}, ${INK_G}, ${INK_B}, ${0.6 * alpha})`)
-      g2.addColorStop(0.4, `rgba(${INK_R}, ${INK_G}, ${INK_B}, ${0.35 * alpha})`)
+      // 中层：中墨
+      const g2 = ctx.createRadialGradient(x, y, 0, x, y, r * 0.5)
+      g2.addColorStop(0, `rgba(${INK_R}, ${INK_G}, ${INK_B}, ${0.25 * alpha})`)
+      g2.addColorStop(0.3, `rgba(${INK_R}, ${INK_G}, ${INK_B}, ${0.15 * alpha})`)
+      g2.addColorStop(0.7, `rgba(${INK_R}, ${INK_G}, ${INK_B}, ${0.05 * alpha})`)
       g2.addColorStop(1, `rgba(${INK_R}, ${INK_G}, ${INK_B}, 0)`)
 
       ctx.fillStyle = g2
@@ -514,7 +515,26 @@ const initSectionInkEffects = () => {
       for (let i = 0; i <= segs; i++) {
         const a = (i / segs) * Math.PI * 2
         const wob = 0.78 + 0.14 * Math.sin(a * 3 + seed) + 0.08 * Math.sin(a * 7 + seed * 2.1) + 0.05 * Math.sin(a * 13 + seed * 0.7)
-        const rr = r * 0.4 * wob
+        const rr = r * 0.5 * wob
+        const px = x + Math.cos(a) * rr
+        const py = y + Math.sin(a) * rr
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py)
+      }
+      ctx.closePath()
+      ctx.fill()
+
+      // 内层：浓墨（中心集中）
+      const g3 = ctx.createRadialGradient(x, y, 0, x, y, r * 0.25)
+      g3.addColorStop(0, `rgba(${INK_R}, ${INK_G}, ${INK_B}, ${0.5 * alpha})`)
+      g3.addColorStop(0.4, `rgba(${INK_R}, ${INK_G}, ${INK_B}, ${0.3 * alpha})`)
+      g3.addColorStop(1, `rgba(${INK_R}, ${INK_G}, ${INK_B}, 0)`)
+
+      ctx.fillStyle = g3
+      ctx.beginPath()
+      for (let i = 0; i <= segs; i++) {
+        const a = (i / segs) * Math.PI * 2
+        const wob = 0.78 + 0.14 * Math.sin(a * 3 + seed) + 0.08 * Math.sin(a * 7 + seed * 2.1) + 0.05 * Math.sin(a * 13 + seed * 0.7)
+        const rr = r * 0.25 * wob
         const px = x + Math.cos(a) * rr
         const py = y + Math.sin(a) * rr
         if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py)
