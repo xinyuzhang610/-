@@ -1,10 +1,20 @@
 <template>
-  <div class="register-container">
-    <div class="register-card">
-      <div class="register-header">
-        <img src="../assets/logo.png" alt="智教通" class="register-logo" />
-        <h1 class="register-title">注册账号</h1>
-        <p class="register-subtitle">加入智教通，开启智能教学之旅</p>
+  <div class="auth-container">
+    <!-- 左侧插画 -->
+    <div class="auth-illustration">
+      <div class="illustration-content">
+        <div class="illustration-icon">📚</div>
+        <h2 class="illustration-title">加入智教通</h2>
+        <p class="illustration-desc">开启智能教学之旅</p>
+        <p class="illustration-quote">"让AI赋能每一堂课"</p>
+      </div>
+    </div>
+
+    <!-- 右侧表单 -->
+    <div class="auth-form">
+      <div class="form-header">
+        <h1 class="form-title">注册账号</h1>
+        <p class="form-subtitle">创建您的智教通账号</p>
       </div>
 
       <el-form
@@ -18,7 +28,6 @@
           <el-input
             v-model="registerForm.username"
             placeholder="请输入用户名"
-            prefix-icon="User"
             size="large"
           />
         </el-form-item>
@@ -28,7 +37,6 @@
             v-model="registerForm.password"
             type="password"
             placeholder="请输入密码（至少6位）"
-            prefix-icon="Lock"
             size="large"
             show-password
           />
@@ -39,7 +47,6 @@
             v-model="registerForm.confirmPassword"
             type="password"
             placeholder="请再次输入密码"
-            prefix-icon="Lock"
             size="large"
             show-password
           />
@@ -97,22 +104,20 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item>
-          <el-button
-            type="primary"
-            size="large"
-            class="register-btn"
-            :loading="loading"
-            @click="handleRegister"
-          >
-            注册
-          </el-button>
-        </el-form-item>
+        <el-button
+          type="primary"
+          size="large"
+          class="register-btn"
+          :loading="loading"
+          @click="handleRegister"
+        >
+          注册
+        </el-button>
       </el-form>
 
-      <div class="register-footer">
+      <div class="form-footer">
         <span>已有账号？</span>
-        <router-link to="/login" class="login-link">立即登录</router-link>
+        <router-link to="/login" class="login-link">立即登录 →</router-link>
       </div>
     </div>
   </div>
@@ -198,55 +203,88 @@ const handleRegister = async () => {
 </script>
 
 <style scoped>
-.register-container {
+.auth-container {
+  display: flex;
   min-height: 100vh;
+}
+
+/* 左侧插画 */
+.auth-illustration {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-bg);
-  padding: 20px;
+  background: var(--color-chip-bg);
+  padding: var(--space-2xl);
+  animation: fadeInLeft 0.5s var(--ease-out);
 }
 
-.register-card {
-  width: 100%;
-  max-width: 480px;
-  background: white;
-  border-radius: 12px;
-  padding: 40px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
-}
-
-.register-header {
+.illustration-content {
   text-align: center;
-  margin-bottom: 32px;
 }
 
-.register-logo {
-  width: 64px;
-  height: 64px;
-  margin-bottom: 16px;
+.illustration-icon {
+  font-size: 80px;
+  margin-bottom: var(--space-lg);
 }
 
-.register-title {
-  font-family: var(--font-display);
-  font-size: 28px;
+.illustration-title {
+  font-family: var(--font-heading);
+  font-size: 36px;
   font-weight: 600;
   color: var(--color-ink);
-  margin-bottom: 8px;
+  margin-bottom: var(--space-sm);
 }
 
-.register-subtitle {
-  font-family: var(--font-sans);
-  font-size: 14px;
+.illustration-desc {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--color-ink-soft);
+  margin-bottom: var(--space-xl);
+}
+
+.illustration-quote {
+  font-family: var(--font-title);
+  font-size: 18px;
+  font-style: italic;
+  color: var(--color-ink);
+}
+
+/* 右侧表单 */
+.auth-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--space-2xl);
+  max-width: 500px;
+  animation: fadeInRight 0.5s var(--ease-out) 0.2s both;
+}
+
+.form-header {
+  margin-bottom: var(--space-2xl);
+}
+
+.form-title {
+  font-family: var(--font-heading);
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--color-ink);
+  margin-bottom: var(--space-sm);
+}
+
+.form-subtitle {
+  font-family: var(--font-body);
+  font-size: 16px;
   color: var(--color-ink-soft);
 }
 
 .register-form {
-  margin-bottom: 24px;
+  margin-bottom: var(--space-lg);
 }
 
 .register-form :deep(.el-form-item__label) {
-  font-family: var(--font-sans);
+  font-family: var(--font-ui);
   font-size: 14px;
   color: var(--color-ink);
 }
@@ -254,6 +292,7 @@ const handleRegister = async () => {
 .register-form :deep(.el-input__wrapper) {
   border-radius: var(--radius-md);
   box-shadow: 0 0 0 1px var(--color-border) inset;
+  transition: box-shadow var(--duration-fast) ease;
 }
 
 .register-form :deep(.el-input__wrapper:hover) {
@@ -261,7 +300,7 @@ const handleRegister = async () => {
 }
 
 .register-form :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px var(--color-ink) inset;
+  box-shadow: 0 0 0 2px var(--color-ink) inset;
 }
 
 .register-form :deep(.el-select .el-input__wrapper) {
@@ -270,36 +309,91 @@ const handleRegister = async () => {
 
 .register-btn {
   width: 100%;
-  border-radius: 46px;
-  font-family: var(--font-misans);
+  border-radius: var(--radius-full);
+  font-family: var(--font-ui);
   font-size: 16px;
   font-weight: 500;
-  background: var(--color-ink);
-  border-color: var(--color-ink);
-  color: #fafafa;
-  height: 40px;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  height: 48px;
+  transition: all var(--duration-fast) ease;
 }
 
 .register-btn:hover {
-  background: #3a3933;
-  border-color: #3a3933;
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
-.register-footer {
+.form-footer {
   text-align: center;
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 14px;
   color: var(--color-ink-soft);
 }
 
 .login-link {
-  color: var(--color-ink);
-  margin-left: 4px;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  color: var(--color-primary);
+  margin-left: var(--space-xs);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color var(--duration-fast) ease;
 }
 
 .login-link:hover {
-  color: #3a3933;
+  color: var(--color-primary-hover);
+}
+
+/* 动画 */
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .auth-container {
+    flex-direction: column;
+  }
+
+  .auth-illustration {
+    min-height: 200px;
+    padding: var(--space-lg);
+  }
+
+  .illustration-icon {
+    font-size: 60px;
+  }
+
+  .illustration-title {
+    font-size: 28px;
+  }
+
+  .auth-form {
+    max-width: 100%;
+    padding: var(--space-lg);
+  }
+
+  .form-title {
+    font-size: 24px;
+  }
 }
 </style>
