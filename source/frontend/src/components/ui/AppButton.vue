@@ -84,7 +84,7 @@ function handleClick(event) {
 .app-button--gold {
   background: var(--gold-600);
   color: var(--moon-50);
-  box-shadow: 0 0.75rem 1.75rem rgb(157 108 29 / 20%);
+  box-shadow: 0 0.75rem 1.75rem var(--effect-button-gold-shadow);
 }
 
 .app-button--ghost {

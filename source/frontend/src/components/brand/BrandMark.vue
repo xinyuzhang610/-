@@ -39,7 +39,7 @@ defineProps({
 .brand-mark__seal {
   width: 3rem;
   flex: 0 0 3rem;
-  filter: drop-shadow(0 0.25rem 0.5rem rgb(23 107 90 / 16%));
+  filter: drop-shadow(0 0.25rem 0.5rem var(--effect-brand-seal-shadow));
 }
 
 .brand-mark__seal-field {

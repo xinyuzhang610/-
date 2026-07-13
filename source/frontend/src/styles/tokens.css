@@ -90,6 +90,28 @@
   --material-border: 1px solid rgb(255 255 255 / 64%);
   --material-blur: blur(18px) saturate(130%);
 
+  /* Brand primitive effects */
+  --effect-brand-seal-shadow: rgb(23 107 90 / 16%);
+  --effect-button-gold-shadow: rgb(157 108 29 / 20%);
+  --effect-panel-inlay: rgb(213 166 79 / 18%);
+  --effect-core-surface: rgb(169 221 206 / 16%);
+  --effect-core-halo-gold: rgb(241 217 157 / 86%);
+  --effect-core-halo-jade: rgb(66 185 154 / 42%);
+  --effect-core-halo-clear: rgb(23 107 90 / 0%);
+  --effect-core-link: rgb(169 221 206 / 17%);
+  --effect-core-node-gold: rgb(213 166 79 / 92%);
+  --effect-core-node-jade: rgb(66 185 154 / 82%);
+  --effect-core-center: rgb(248 250 245 / 92%);
+  --effect-core-center-ring: rgb(213 166 79 / 90%);
+  --effect-landscape-sky: linear-gradient(to bottom, transparent, rgb(169 221 206 / 26%));
+  --effect-landscape-moon: rgb(241 217 157 / 70%);
+  --effect-landscape-far-ink: rgb(23 107 90 / 12%);
+  --effect-landscape-near-ink: rgb(36 51 46 / 72%);
+  --effect-landscape-ridge: var(--gold-400);
+  --effect-landscape-mist: linear-gradient(90deg, transparent, rgb(248 250 245 / 82%) 30%, rgb(240 242 233 / 66%) 64%, transparent);
+  --effect-landscape-grain-ink: var(--ink-600);
+  --effect-landscape-grain-gold: var(--gold-600);
+
   /* Motion */
   --duration-fast: 150ms;
   --duration-normal: 300ms;

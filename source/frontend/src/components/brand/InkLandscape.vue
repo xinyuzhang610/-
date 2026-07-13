@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useMotionPreference } from '../../composables/useMotionPreference'
 
 const props = defineProps({
@@ -10,51 +10,85 @@ const props = defineProps({
 })
 
 const { canAnimate } = useMotionPreference()
-const offsetX = ref(0)
-const offsetY = ref(0)
-const isStatic = computed(() => !props.parallax || !canAnimate.value)
-const landscapeStyle = computed(() => ({
-  '--art-x': `${offsetX.value * -4}px`,
-  '--art-y': `${offsetY.value * -3}px`,
-  '--far-x': `${offsetX.value * 5}px`,
-  '--far-y': `${offsetY.value * 2}px`,
-  '--near-x': `${offsetX.value * 11}px`,
-  '--near-y': `${offsetY.value * 4}px`,
-  '--mist-upper-x': `${offsetX.value * -8}px`,
-  '--mist-lower-x': `${offsetX.value * 6}px`
-}))
+const root = ref(null)
+const coarsePointer = ref(false)
+const isStatic = computed(() => !props.parallax || !canAnimate.value || coarsePointer.value)
+let pointerFrameId
+let pointerX = 0
+let pointerY = 0
+let pointerMedia
+
+function applyOffsets(x, y) {
+  if (!root.value) return
+  const style = root.value.style
+  style.setProperty('--art-x', `${x * -4}px`)
+  style.setProperty('--art-y', `${y * -3}px`)
+  style.setProperty('--far-x', `${x * 5}px`)
+  style.setProperty('--far-y', `${y * 2}px`)
+  style.setProperty('--near-x', `${x * 11}px`)
+  style.setProperty('--near-y', `${y * 4}px`)
+  style.setProperty('--mist-upper-x', `${x * -8}px`)
+  style.setProperty('--mist-lower-x', `${x * 6}px`)
+}
+
+function flushPointer() {
+  pointerFrameId = undefined
+  if (isStatic.value || !root.value) return
+  const bounds = root.value.getBoundingClientRect()
+  const x = ((pointerX - bounds.left) / Math.max(bounds.width, 1) - 0.5) * 2
+  const y = ((pointerY - bounds.top) / Math.max(bounds.height, 1) - 0.5) * 2
+  applyOffsets(x, y)
+}
 
 function handlePointerMove(event) {
   if (isStatic.value) return
-  const bounds = event.currentTarget.getBoundingClientRect()
-  offsetX.value = ((event.clientX - bounds.left) / Math.max(bounds.width, 1) - 0.5) * 2
-  offsetY.value = ((event.clientY - bounds.top) / Math.max(bounds.height, 1) - 0.5) * 2
+  pointerX = event.clientX
+  pointerY = event.clientY
+  if (pointerFrameId == null) pointerFrameId = window.requestAnimationFrame(flushPointer)
 }
 
 function resetPointer() {
-  offsetX.value = 0
-  offsetY.value = 0
+  if (pointerFrameId != null) window.cancelAnimationFrame(pointerFrameId)
+  pointerFrameId = undefined
+  applyOffsets(0, 0)
 }
+
+function updatePointerCapability(event) {
+  coarsePointer.value = event.matches
+}
+
+onMounted(() => {
+  if (typeof window.matchMedia !== 'function') return
+  pointerMedia = window.matchMedia('(pointer: coarse)')
+  coarsePointer.value = pointerMedia.matches
+  if (typeof pointerMedia.addEventListener === 'function') {
+    pointerMedia.addEventListener('change', updatePointerCapability)
+  } else pointerMedia.addListener?.(updatePointerCapability)
+})
+
+watch(isStatic, (staticMode) => {
+  if (staticMode) resetPointer()
+})
+
+onBeforeUnmount(() => {
+  resetPointer()
+  if (typeof pointerMedia?.removeEventListener === 'function') {
+    pointerMedia.removeEventListener('change', updatePointerCapability)
+  } else pointerMedia?.removeListener?.(updatePointerCapability)
+})
 </script>
 
 <template>
   <div
+    ref="root"
     class="ink-landscape"
     :class="{ 'ink-landscape--static': isStatic }"
-    :style="landscapeStyle"
     aria-hidden="true"
     @pointermove="handlePointerMove"
     @pointerleave="resetPointer"
   >
     <svg class="ink-landscape__artwork" viewBox="0 0 1200 520" preserveAspectRatio="xMidYMid slice" focusable="false">
-      <defs>
-        <linearGradient id="ink-sky" x1="0" y1="0" x2="0" y2="1">
-          <stop stop-color="var(--moon-50)" stop-opacity="0" />
-          <stop offset="1" stop-color="var(--jade-200)" stop-opacity=".26" />
-        </linearGradient>
-      </defs>
-      <rect width="1200" height="520" fill="url(#ink-sky)" />
-      <circle cx="900" cy="108" r="58" fill="var(--gold-200)" fill-opacity=".7" />
+      <circle cx="900" cy="108" r="58" fill="var(--effect-landscape-moon)" />
     </svg>
     <svg class="ink-landscape__mountains ink-landscape__mountains--far" viewBox="0 0 1200 520" preserveAspectRatio="xMidYMid slice" focusable="false">
       <path d="M0 388 164 238l73 68 132-173 132 163 92-91 171 180 120-152 116 99 100-142 100 116v214H0Z" />
@@ -77,6 +111,14 @@ function resetPointer() {
   overflow: hidden;
   background: var(--moon-50);
   isolation: isolate;
+  --art-x: 0px;
+  --art-y: 0px;
+  --far-x: 0px;
+  --far-y: 0px;
+  --near-x: 0px;
+  --near-y: 0px;
+  --mist-upper-x: 0px;
+  --mist-lower-x: 0px;
 }
 
 .ink-landscape__artwork,
@@ -91,29 +133,30 @@ function resetPointer() {
   transition: transform var(--duration-slow) var(--ease-out);
 }
 
-.ink-landscape__artwork { transform: translate3d(var(--art-x), var(--art-y), 0) scale(1.02); }
+.ink-landscape__artwork {
+  background: var(--effect-landscape-sky);
+  transform: translate3d(var(--art-x), var(--art-y), 0) scale(1.02);
+}
 
 .ink-landscape__mountains--far {
-  fill: var(--jade-700);
-  fill-opacity: 0.12;
+  fill: var(--effect-landscape-far-ink);
   transform: translate3d(var(--far-x), var(--far-y), 0) scale(1.025);
 }
 
 .ink-landscape__mountains--near {
-  fill: var(--ink-800);
-  fill-opacity: 0.72;
+  fill: var(--effect-landscape-near-ink);
   transform: translate3d(var(--near-x), var(--near-y), 0) scale(1.04);
 }
 
 .ink-landscape__ridge {
   fill: none;
-  stroke: var(--gold-400);
+  stroke: var(--effect-landscape-ridge);
   stroke-linecap: round;
   stroke-width: 2;
 }
 
 .ink-landscape__mist {
-  background: linear-gradient(90deg, transparent, rgb(248 250 245 / 82%) 30%, rgb(240 242 233 / 66%) 64%, transparent);
+  background: var(--effect-landscape-mist);
   filter: blur(1.25rem);
 }
 
@@ -132,8 +175,8 @@ function resetPointer() {
 .ink-landscape__grain {
   opacity: 0.16;
   background-image:
-    radial-gradient(circle at 20% 30%, var(--ink-600) 0 0.5px, transparent 0.7px),
-    radial-gradient(circle at 70% 60%, var(--gold-600) 0 0.45px, transparent 0.7px);
+    radial-gradient(circle at 20% 30%, var(--effect-landscape-grain-ink) 0 0.5px, transparent 0.7px),
+    radial-gradient(circle at 70% 60%, var(--effect-landscape-grain-gold) 0 0.45px, transparent 0.7px);
   background-size: 7px 7px, 11px 11px;
   mix-blend-mode: multiply;
 }

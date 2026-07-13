@@ -27,7 +27,7 @@ defineProps({
 .glass-panel::before {
   position: absolute;
   inset: 0.4rem;
-  border: 1px solid rgb(213 166 79 / 18%);
+  border: 1px solid var(--effect-panel-inlay);
   border-radius: calc(var(--radius-xl) - 0.4rem);
   content: '';
   pointer-events: none;
