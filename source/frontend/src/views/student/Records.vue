@@ -1,250 +1,28 @@
-<template>
-  <div class="records-container">
-    <h2 class="page-title">📊 我的学习记录</h2>
-
-    <!-- 统计卡片 -->
-    <div class="stats-cards">
-      <div class="stat-card">
-        <div class="stat-value">{{ stats.totalUsage }}</div>
-        <div class="stat-label">使用次数</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ stats.toolCount }}</div>
-        <div class="stat-label">使用工具数</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">{{ stats.streakDays }}</div>
-        <div class="stat-label">连续天数</div>
-      </div>
-    </div>
-
-    <!-- 最近使用 -->
-    <div class="section">
-      <h3 class="section-title">最近使用</h3>
-      <div class="record-list">
-        <div
-          v-for="record in recentRecords"
-          :key="record.id"
-          class="record-item"
-        >
-          <span class="record-time">{{ record.time }}</span>
-          <span class="record-icon">{{ record.icon }}</span>
-          <span class="record-tool">{{ record.toolName }}</span>
-          <span class="record-input">输入："{{ record.input }}"</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- 收藏的工具 -->
-    <div class="section">
-      <h3 class="section-title">收藏的工具</h3>
-      <div class="favorite-list">
-        <div
-          v-for="tool in favoriteTools"
-          :key="tool.id"
-          class="favorite-item"
-          @click="useTool(tool)"
-        >
-          <span class="favorite-icon">{{ tool.icon }}</span>
-          <span class="favorite-name">{{ tool.name }}</span>
-          <el-button type="primary" size="small">进入</el-button>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { getMyUsage } from '../../api/usage'
+import StatusState from '../../components/ui/StatusState.vue'
 
-const router = useRouter()
-
-// 统计数据
-const stats = ref({
-  totalUsage: 12,
-  toolCount: 3,
-  streakDays: 5
-})
-
-// 最近使用记录
-const recentRecords = ref([
-  {
-    id: 1,
-    time: '7/15 14:30',
-    icon: '🏮',
-    toolName: '古诗词赏析',
-    input: '静夜思'
-  },
-  {
-    id: 2,
-    time: '7/15 10:20',
-    icon: '🧮',
-    toolName: '公式推导',
-    input: '勾股定理'
-  },
-  {
-    id: 3,
-    time: '7/14 16:45',
-    icon: '🤖',
-    toolName: 'AI问答',
-    input: '牛顿第三定律是什么'
-  },
-  {
-    id: 4,
-    time: '7/14 10:15',
-    icon: '✍️',
-    toolName: '作文辅助',
-    input: '我的暑假计划'
-  }
-])
-
-// 收藏的工具
-const favoriteTools = ref([
-  { id: 1, name: '古诗词赏析', icon: '🏮' },
-  { id: 2, name: '作文辅助', icon: '✍️' },
-  { id: 7, name: '公式推导', icon: '🧮' }
-])
-
-// 使用工具
-const useTool = (tool) => {
-  router.push(`/tool/${tool.id}`)
-}
+const logs = ref([]), loading = ref(true), error = ref('')
+const userId = localStorage.getItem('user_id') || '1'
+const uniqueTools = computed(() => new Set(logs.value.map(item => item.tool_id)).size)
+const activeDays = computed(() => new Set(logs.value.map(item => item.created_at?.slice(0, 10)).filter(Boolean)).size)
+const formatTime = value => value ? new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : '时间未知'
+async function load() { loading.value = true; error.value = ''; try { const { data } = await getMyUsage(userId); logs.value = Array.isArray(data) ? data : [] } catch (cause) { error.value = cause?.response?.data?.detail || '学习记录暂时无法读取。' } finally { loading.value = false } }
+onMounted(load)
 </script>
 
+<template>
+  <main class="records-page"><header><p>LEARNING CONSTELLATION</p><h1>学习轨迹</h1><span>这里仅呈现真实记录，不会补造尚未发生的学习数据。</span></header>
+    <StatusState v-if="loading" type="loading" title="正在汇集学习轨迹" />
+    <StatusState v-else-if="error" type="error" title="轨迹读取失败" :description="error" @retry="load" />
+    <template v-else><section class="metrics" aria-label="学习记录指标"><article aria-label="使用次数"><span>使用次数</span><strong>{{ logs.length }}</strong></article><article aria-label="使用工具数"><span>使用工具数</span><strong>{{ uniqueTools }}</strong></article><article aria-label="活跃学习日"><span>活跃学习日</span><strong>{{ activeDays }}</strong></article></section>
+      <StatusState v-if="!logs.length" title="还没有学习记录" description="第一次使用工具后，真实轨迹会出现在这里。" />
+      <section v-else class="timeline" aria-labelledby="timeline-title"><h2 id="timeline-title">最近学习片段</h2><ol><li v-for="log in logs" :key="log.id"><time :datetime="log.created_at">{{ formatTime(log.created_at) }}</time><div><span>工具 #{{ log.tool_id }}</span><h3>{{ log.input_text || '未记录输入内容' }}</h3><p v-if="log.output_text">{{ log.output_text }}</p></div></li></ol></section>
+    </template>
+  </main>
+</template>
+
 <style scoped>
-.records-container {
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.page-title {
-  font-family: var(--font-heading);
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--color-ink);
-  margin-bottom: 24px;
-}
-
-/* 统计卡片 */
-.stats-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin-bottom: 32px;
-}
-
-.stat-card {
-  background: white;
-  border-radius: var(--radius-lg);
-  padding: 24px;
-  text-align: center;
-  box-shadow: var(--shadow-sm);
-}
-
-.stat-value {
-  font-family: var(--font-heading);
-  font-size: 36px;
-  font-weight: 600;
-  color: var(--color-ink);
-  margin-bottom: 8px;
-}
-
-.stat-label {
-  font-family: var(--font-body);
-  font-size: 14px;
-  color: var(--color-ink-soft);
-}
-
-/* 区块 */
-.section {
-  background: white;
-  border-radius: var(--radius-lg);
-  padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: var(--shadow-sm);
-}
-
-.section-title {
-  font-family: var(--font-heading);
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--color-ink);
-  margin-bottom: 16px;
-}
-
-/* 记录列表 */
-.record-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.record-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background: var(--color-chip-bg);
-  border-radius: var(--radius-md);
-}
-
-.record-time {
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--color-ink-soft);
-  width: 100px;
-}
-
-.record-icon {
-  font-size: 20px;
-}
-
-.record-tool {
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-ink);
-  width: 100px;
-}
-
-.record-input {
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--color-ink-soft);
-  flex: 1;
-}
-
-/* 收藏列表 */
-.favorite-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.favorite-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background: var(--color-chip-bg);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.favorite-item:hover {
-  background: var(--color-border);
-}
-
-.favorite-icon {
-  font-size: 24px;
-}
-
-.favorite-name {
-  flex: 1;
-  font-family: var(--font-body);
-  font-size: 15px;
-  color: var(--color-ink);
-}
+.records-page{min-height:100%;padding:clamp(28px,5vw,64px);background:linear-gradient(160deg,#101916,#182923);color:var(--moon-50)}header p{color:var(--gold-300);font-size:.7rem;letter-spacing:.22em}header h1{margin:12px 0;font:500 clamp(2.4rem,5vw,4.5rem) var(--font-display)}header span{color:var(--moon-300)}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:38px 0}.metrics article{padding:24px;border:1px solid rgb(203 211 201 / 16%);border-radius:20px;background:rgb(255 255 255 / 4%)}.metrics span,.metrics strong{display:block}.metrics span{color:var(--moon-300);font-size:.78rem}.metrics strong{margin-top:8px;color:var(--gold-300);font:500 2.7rem var(--font-display)}.timeline{max-width:920px;padding:clamp(22px,4vw,42px);border:1px solid rgb(203 211 201 / 16%);border-radius:28px;background:rgb(255 255 255 / 4%)}.timeline h2{margin-bottom:28px;font:500 1.7rem var(--font-heading)}.timeline ol{list-style:none}.timeline li{display:grid;grid-template-columns:150px 1fr;gap:24px;padding:22px 0;border-top:1px solid rgb(255 255 255 / 10%)}.timeline time{color:var(--ink-300);font-size:.76rem}.timeline li span{color:var(--jade-200);font-size:.72rem}.timeline h3{margin:5px 0;font:500 1rem var(--font-heading)}.timeline li p{display:-webkit-box;overflow:hidden;color:var(--moon-300);line-height:1.6;-webkit-box-orient:vertical;-webkit-line-clamp:2}@media(max-width:640px){.records-page{padding:24px 16px}.metrics{grid-template-columns:1fr}.timeline li{grid-template-columns:1fr;gap:8px}}
 </style>
