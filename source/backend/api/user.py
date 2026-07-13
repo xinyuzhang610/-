@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from models.database import get_db
 from schemas.user import UserCreate, UserResponse, LoginRequest, TokenResponse, UserUpdate
-from services.user_service import create_user, authenticate_user, get_user_by_id, update_user
+from services.user_service import create_user, authenticate_user, get_user_by_id, get_user_by_username, update_user
 from utils.security import generate_token
 from config import settings
 
@@ -13,7 +13,7 @@ router = APIRouter()
 def register(user: UserCreate, db: Session = Depends(get_db)):
     """用户注册"""
     # 检查用户名是否已存在
-    existing_user = get_user_by_id(db, user.username)
+    existing_user = get_user_by_username(db, user.username)
     if existing_user:
         raise HTTPException(status_code=400, detail="用户名已存在")
 
