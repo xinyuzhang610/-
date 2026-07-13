@@ -26,13 +26,15 @@
   --color-moon: var(--moon-50);
   --color-cinnabar: var(--cinnabar-500);
   --color-bg: var(--moon-50);
-  --color-border: color-mix(in srgb, var(--ink-950) 20%, transparent);
+  --color-border: #c4ccc7;
   --color-chip-bg: var(--moon-100);
   --color-primary: var(--jade-700);
   --color-primary-hover: #105446;
   --color-success: var(--jade-700);
   --color-warning: var(--gold-600);
   --color-danger: var(--cinnabar-700);
+  /* Dark jade maintains greater than 3:1 contrast on moon and white surfaces. */
+  --focus-ring: #0f5b4d;
   --color-arts: #66527e;
   --color-science: #315f72;
 
@@ -97,4 +99,10 @@
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-reveal: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@supports (color: color-mix(in srgb, black, transparent)) {
+  :root {
+    --color-border: color-mix(in srgb, var(--ink-950) 20%, transparent);
+  }
 }

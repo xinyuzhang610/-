@@ -1,4 +1,4 @@
-import { computed, onScopeDispose, ref } from 'vue'
+import { computed, getCurrentScope, onScopeDispose, ref } from 'vue'
 
 export function useMotionPreference() {
   const reduced = ref(false)
@@ -15,6 +15,10 @@ export function useMotionPreference() {
   }
 
   reduced.value = mediaQuery.matches
+
+  if (!getCurrentScope()) {
+    return { reduced, canAnimate, prefersReducedMotion }
+  }
 
   if (typeof mediaQuery.addEventListener === 'function') {
     mediaQuery.addEventListener('change', updatePreference)

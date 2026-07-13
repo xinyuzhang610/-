@@ -1,9 +1,22 @@
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import {
+  getCurrentInstance,
+  getCurrentScope,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch
+} from 'vue'
 import { useMotionPreference } from './useMotionPreference'
 
 export function useReveal() {
   const target = ref(null)
   const visible = ref(false)
+
+  if (!getCurrentInstance() || !getCurrentScope()) {
+    visible.value = true
+    return { target, visible }
+  }
+
   const { canAnimate } = useMotionPreference()
   let observer
 
