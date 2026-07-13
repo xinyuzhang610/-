@@ -2,13 +2,15 @@
 import { computed, onMounted, ref } from 'vue'
 import { getMyUsage } from '../../api/usage'
 import StatusState from '../../components/ui/StatusState.vue'
+import { useDemoMode } from '../../composables/useDemoMode'
 
 const logs = ref([]), loading = ref(true), error = ref('')
 const userId = localStorage.getItem('user_id') || '1'
+const { enabled: demoEnabled, getDemoData } = useDemoMode()
 const uniqueTools = computed(() => new Set(logs.value.map(item => item.tool_id)).size)
 const activeDays = computed(() => new Set(logs.value.map(item => item.created_at?.slice(0, 10)).filter(Boolean)).size)
 const formatTime = value => value ? new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : '时间未知'
-async function load() { loading.value = true; error.value = ''; try { const { data } = await getMyUsage(userId); logs.value = Array.isArray(data) ? data : [] } catch (cause) { error.value = cause?.response?.data?.detail || '学习记录暂时无法读取。' } finally { loading.value = false } }
+async function load() { loading.value = true; error.value = ''; try { if (demoEnabled.value) { logs.value = getDemoData('studentHistory'); return } const { data } = await getMyUsage(userId); logs.value = Array.isArray(data) ? data : [] } catch (cause) { error.value = cause?.response?.data?.detail || '学习记录暂时无法读取。' } finally { loading.value = false } }
 onMounted(load)
 </script>
 

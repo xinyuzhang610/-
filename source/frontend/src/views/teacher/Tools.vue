@@ -11,10 +11,12 @@
 import { onMounted, ref } from 'vue'
 import StatusState from '../../components/ui/StatusState.vue'
 import { deleteTool, getPresetTools, getShareLink } from '../../api/tools'
+import { useDemoMode } from '../../composables/useDemoMode'
 const tools=ref([]),loading=ref(true),errorMessage=ref(''),notice=ref('')
 const platformUrl=import.meta.env.VITE_AGENT_PLATFORM_URL||''
+const {enabled:demoEnabled,getDemoData}=useDemoMode()
 function toolType(t){return t.is_preset?'预设工具':t.external_url?'外部智能体':'我的工具'}
-async function loadTools(){loading.value=true;errorMessage.value='';try{const {data}=await getPresetTools();tools.value=data.items||[]}catch(e){errorMessage.value=e.response?.data?.detail||'无法连接工具服务，请确认后端已启动。'}finally{loading.value=false}}
+async function loadTools(){loading.value=true;errorMessage.value='';try{if(demoEnabled.value){tools.value=getDemoData('tools').items;return}const {data}=await getPresetTools();tools.value=data.items||[]}catch(e){errorMessage.value=e.response?.data?.detail||'无法连接工具服务，请确认后端已启动。'}finally{loading.value=false}}
 async function share(tool){notice.value='';try{const {data}=await getShareLink(tool.id);await navigator.clipboard?.writeText(data.share_url);notice.value='分享链接已复制。'}catch{notice.value='暂时无法生成分享链接。'}}
 async function remove(tool){if(!window.confirm(`确定删除“${tool.name}”吗？`))return;try{await deleteTool(tool.id);tools.value=tools.value.filter(t=>t.id!==tool.id);notice.value='工具已删除。'}catch{notice.value='删除失败，请稍后重试。'}}
 onMounted(loadTools)

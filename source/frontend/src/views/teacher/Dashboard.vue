@@ -15,11 +15,13 @@ import { computed, onMounted, ref } from 'vue'
 import MetricCard from '../../components/data/MetricCard.vue'
 import StatusState from '../../components/ui/StatusState.vue'
 import { getDashboard } from '../../api/usage'
+import { useDemoMode } from '../../composables/useDemoMode'
 const dashboard=ref(null),loading=ref(true),errorMessage=ref('')
+const {enabled:demoEnabled,getDemoData}=useDemoMode()
 const maxCount=computed(()=>Math.max(1,...(dashboard.value?.weekly_trend||[]).map(i=>i.count)))
 const barHeight=count=>`${Math.max(5,(count/maxCount.value)*100)}%`
 const formatTime=value=>value?new Intl.DateTimeFormat('zh-CN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(value)):'时间未知'
-async function loadDashboard(){loading.value=true;errorMessage.value='';try{const {data}=await getDashboard();dashboard.value=data}catch(e){dashboard.value=null;errorMessage.value=e.response?.data?.detail||'无法连接统计服务，请确认后端已启动。'}finally{loading.value=false}}
+async function loadDashboard(){loading.value=true;errorMessage.value='';try{if(demoEnabled.value){dashboard.value=getDemoData('dashboard');return}const {data}=await getDashboard();dashboard.value=data}catch(e){dashboard.value=null;errorMessage.value=e.response?.data?.detail||'无法连接统计服务，请确认后端已启动。'}finally{loading.value=false}}
 onMounted(loadDashboard)
 </script>
 <style scoped>

@@ -3,12 +3,19 @@ import { onMounted, ref } from 'vue'
 import { getPlaza } from '../../api/plaza'
 import StatusState from '../../components/ui/StatusState.vue'
 import ToolCard from '../../components/student/ToolCard.vue'
+import { useDemoMode } from '../../composables/useDemoMode'
 
 const categories = ref([]), tools = ref([]), hotTools = ref([])
 const category = ref(''), search = ref(''), loading = ref(true), error = ref('')
+const { enabled: demoEnabled, getDemoData } = useDemoMode()
 async function load() {
   loading.value = true; error.value = ''
   try {
+    if (demoEnabled.value) {
+      const demo = getDemoData('plaza'); categories.value = demo.categories; hotTools.value = demo.hot_tools
+      tools.value = demo.tools.filter(item => (!category.value || item.category === category.value) && (!search.value.trim() || `${item.name} ${item.description}`.includes(search.value.trim())))
+      return
+    }
     const { data } = await getPlaza({ category: category.value, search: search.value.trim() })
     categories.value = data.categories || []; tools.value = data.tools || []; hotTools.value = data.hot_tools || []
   } catch (cause) { error.value = cause?.response?.data?.detail || '工具广场暂时无法连接，请稍后重试。' }
