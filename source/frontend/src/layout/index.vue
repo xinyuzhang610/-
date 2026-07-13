@@ -1,311 +1,49 @@
 <template>
-  <el-container class="layout-container">
-    <!-- 侧边栏 -->
-    <el-aside :width="isCollapsed ? '64px' : '220px'" class="layout-aside">
-      <div class="sidebar-content">
-        <div class="logo-container">
-          <img src="../assets/logo-temp.svg" alt="智教通" class="logo-img" />
-          <span v-show="!isCollapsed" class="logo-text">智教通</span>
-        </div>
-
-        <el-menu
-          :default-active="activeMenu"
-          :collapse="isCollapsed"
-          :router="true"
-          class="sidebar-menu"
-          background-color="#fcfaf8"
-          text-color="#26251e"
-          active-text-color="#26251e"
-        >
-          <!-- 教师端菜单 -->
-          <template v-if="userRole === 'teacher'">
-            <el-menu-item index="/teacher/home">
-              <el-icon><HomeFilled /></el-icon>
-              <template #title>需求引导</template>
-            </el-menu-item>
-            <el-menu-item index="/teacher/tools">
-              <el-icon><Tools /></el-icon>
-              <template #title>我的工具</template>
-            </el-menu-item>
-            <el-menu-item index="/teacher/dashboard">
-              <el-icon><DataLine /></el-icon>
-              <template #title>数据看板</template>
-            </el-menu-item>
-          </template>
-
-          <!-- 学生端菜单 -->
-          <template v-else>
-            <el-menu-item index="/student/plaza">
-              <el-icon><Grid /></el-icon>
-              <template #title>工具广场</template>
-            </el-menu-item>
-            <el-menu-item index="/student/chat">
-              <el-icon><ChatDotRound /></el-icon>
-              <template #title>AI问答</template>
-            </el-menu-item>
-            <el-menu-item index="/student/records">
-              <el-icon><Document /></el-icon>
-              <template #title>学习记录</template>
-            </el-menu-item>
-          </template>
-        </el-menu>
-      </div>
-
-      <!-- 返回首页 -->
-      <div class="sidebar-bottom">
-        <el-menu
-          :collapse="isCollapsed"
-          :router="true"
-          class="sidebar-menu-bottom"
-          background-color="#fcfaf8"
-          text-color="#26251e"
-        >
-          <el-menu-item index="/" @click="goToHome">
-            <el-icon><Back /></el-icon>
-            <template #title>返回首页</template>
-          </el-menu-item>
-        </el-menu>
-      </div>
-    </el-aside>
-
-    <!-- 右侧内容区 -->
-    <el-container>
-      <!-- 顶部头部 -->
-      <el-header class="layout-header">
-        <div class="header-left">
-          <el-icon
-            class="collapse-btn"
-            @click="toggleCollapse"
-          >
-            <Fold v-if="!isCollapsed" />
-            <Expand v-else />
-          </el-icon>
-          <el-breadcrumb separator="/">
-            <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-            <el-breadcrumb-item>{{ currentPageTitle }}</el-breadcrumb-item>
-          </el-breadcrumb>
-        </div>
-
-        <div class="header-right">
-          <el-dropdown @command="handleCommand">
-            <span class="user-info">
-              <el-avatar :size="32" icon="UserFilled" />
-              <span class="username">{{ userName }}</span>
-              <el-icon><ArrowDown /></el-icon>
-            </span>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="home">返回首页</el-dropdown-item>
-                <el-dropdown-item command="profile">个人信息</el-dropdown-item>
-                <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </div>
-      </el-header>
-
-      <!-- 主内容区 -->
-      <el-main class="layout-main">
-        <router-view />
-      </el-main>
-    </el-container>
-  </el-container>
+  <div class="workspace" :class="{ 'is-collapsed': collapsed }">
+    <button v-if="mobileOpen" class="drawer-backdrop" aria-label="关闭导航" @click="mobileOpen=false"></button>
+    <aside class="sidebar" :class="{ 'is-open': mobileOpen }">
+      <RouterLink class="brand-link" to="/"><BrandMark :compact="collapsed" /></RouterLink>
+      <nav :aria-label="role === 'teacher' ? '教师工作台导航' : '学生学习导航'">
+        <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" :aria-current="route.path===item.to?'page':undefined" @click="mobileOpen=false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path :d="item.icon"/></svg><span>{{ item.label }}</span>
+        </RouterLink>
+      </nav>
+      <div class="sidebar-footer"><RouterLink to="/">返回首页</RouterLink><button @click="logout">退出登录</button></div>
+    </aside>
+    <div class="workspace-body">
+      <header class="workspace-header">
+        <div><button class="mobile-menu" aria-label="打开导航菜单" @click="mobileOpen=true"><span></span><span></span></button><button class="collapse-control" :aria-label="collapsed?'展开侧栏':'收起侧栏'" @click="collapsed=!collapsed">{{ collapsed ? '→' : '←' }}</button></div>
+        <div class="page-context"><span>{{ role==='teacher'?'TEACHER ORBIT':'STUDENT ORBIT' }}</span><strong>{{ route.meta.title || '智教通' }}</strong></div>
+        <div class="profile"><span>{{ initials }}</span><div><small>{{ role==='teacher'?'教师':'学生' }}</small><strong>{{ userName }}</strong></div></div>
+      </header>
+      <main class="workspace-main"><RouterView /></main>
+    </div>
+  </div>
 </template>
-
 <script setup>
-import { ref, computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import {
-  HomeFilled,
-  Tools,
-  DataLine,
-  Grid,
-  ChatDotRound,
-  Document,
-  Fold,
-  Expand,
-  ArrowDown,
-  UserFilled,
-  Back
-} from '@element-plus/icons-vue'
-
-const route = useRoute()
-const router = useRouter()
-
-// 侧边栏折叠状态
-const isCollapsed = ref(false)
-
-// 用户信息（后续从 store 获取）
-const userRole = ref('teacher') // teacher 或 student
-const userName = ref('张老师')
-
-// 当前激活的菜单
-const activeMenu = computed(() => route.path)
-
-// 当前页面标题
-const currentPageTitle = computed(() => {
-  const titleMap = {
-    '/teacher/home': '需求引导',
-    '/teacher/tools': '我的工具',
-    '/teacher/dashboard': '数据看板',
-    '/student/plaza': '工具广场',
-    '/student/chat': 'AI问答',
-    '/student/records': '学习记录'
-  }
-  return titleMap[route.path] || '首页'
-})
-
-// 切换侧边栏折叠
-const toggleCollapse = () => {
-  isCollapsed.value = !isCollapsed.value
-}
-
-// 处理下拉菜单命令
-const handleCommand = (command) => {
-  if (command === 'logout') {
-    // 清除登录状态
-    localStorage.removeItem('token')
-    localStorage.removeItem('userName')
-    localStorage.removeItem('userRole')
-    router.push('/login')
-  } else if (command === 'profile') {
-    // 跳转个人信息页
-    console.log('查看个人信息')
-  } else if (command === 'home') {
-    // 返回首页
-    router.push('/')
-  }
-}
-
-// 返回首页
-const goToHome = () => {
-  router.push('/')
-}
+import { useUserStore } from '../store/user'
+import BrandMark from '../components/brand/BrandMark.vue'
+const route=useRoute(),router=useRouter(),store=useUserStore()
+const collapsed=ref(false),mobileOpen=ref(false)
+const role=computed(()=>route.path.startsWith('/student')?'student':'teacher')
+const userName=computed(()=>store.userName||localStorage.getItem('userName')||(role.value==='teacher'?'教师用户':'探索者'))
+const initials=computed(()=>userName.value.slice(0,1))
+const teacherNav=[
+ {to:'/teacher/home',label:'需求引导',icon:'M4 19V5h16v14H4Zm4-9h8M8 14h5'},
+ {to:'/teacher/tools',label:'我的工具',icon:'M14 6 18 2l4 4-4 4M3 21l8-8m2-7 5 5M5 3l4 4'},
+ {to:'/teacher/dashboard',label:'数据洞察',icon:'M4 20V10m6 10V4m6 16v-7m4 7H2'}]
+const studentNav=[
+ {to:'/student/guidance',label:'兴趣引导',icon:'M12 3a7 7 0 0 0-4 12v3h8v-3a7 7 0 0 0-4-12Z'},
+ {to:'/student/plaza',label:'工具广场',icon:'M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z'},
+ {to:'/student/chat',label:'AI 问答',icon:'M4 5h16v11H8l-4 4V5Z'},
+ {to:'/student/records',label:'学习轨迹',icon:'M5 19V5m0 14h15M8 15l3-4 3 2 5-7'}]
+const navItems=computed(()=>role.value==='teacher'?teacherNav:studentNav)
+function logout(){store.logout();router.push('/login')}
+function onKey(e){if(e.key==='Escape')mobileOpen.value=false}
+onMounted(()=>document.addEventListener('keydown',onKey));onBeforeUnmount(()=>document.removeEventListener('keydown',onKey))
 </script>
-
 <style scoped>
-.layout-container {
-  height: 100vh;
-  background: var(--color-bg);
-}
-
-/* 侧边栏 */
-.layout-aside {
-  background: var(--color-bg);
-  border-right: 1px solid var(--color-chip-bg);
-  transition: width 0.3s;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.sidebar-content {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.logo-container {
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--color-chip-bg);
-}
-
-.logo-img {
-  width: 32px;
-  height: 32px;
-  margin-right: 8px;
-}
-
-.logo-text {
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--color-ink);
-  white-space: nowrap;
-}
-
-.sidebar-menu {
-  border-right: none;
-}
-
-.sidebar-menu .el-menu-item {
-  font-family: var(--font-sans);
-  font-size: 14px;
-}
-
-.sidebar-menu .el-menu-item:hover {
-  background: var(--color-chip-bg);
-}
-
-.sidebar-menu .el-menu-item.is-active {
-  background: rgba(38, 37, 30, 0.08);
-}
-
-.sidebar-bottom {
-  border-top: 1px solid var(--color-chip-bg);
-  flex-shrink: 0;
-}
-
-/* 顶部头部 */
-.layout-header {
-  background: var(--color-bg);
-  border-bottom: 1px solid var(--color-chip-bg);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  height: 60px;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.collapse-btn {
-  font-size: 20px;
-  cursor: pointer;
-  color: var(--color-ink-soft);
-  transition: color 0.3s;
-}
-
-.collapse-btn:hover {
-  color: var(--color-ink);
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: var(--radius-md);
-  transition: background 0.3s;
-}
-
-.user-info:hover {
-  background: var(--color-chip-bg);
-}
-
-.username {
-  font-family: var(--font-sans);
-  font-size: 14px;
-  color: var(--color-ink);
-}
-
-/* 主内容区 */
-.layout-main {
-  background: var(--color-bg);
-  padding: 24px;
-  overflow-y: auto;
-}
+.workspace{display:grid;grid-template-columns:260px 1fr;min-height:100vh;background:var(--ink-950);color:var(--moon-50)}.sidebar{position:sticky;top:0;display:flex;flex-direction:column;height:100vh;padding:24px 16px;border-right:1px solid var(--color-border);background:linear-gradient(180deg,var(--ink-900),var(--ink-950));z-index:20;transition:width var(--duration-normal)}.brand-link{display:block;padding:4px 8px 28px;text-decoration:none}.sidebar nav{display:grid;gap:8px}.sidebar nav a,.sidebar-footer a,.sidebar-footer button{display:flex;align-items:center;gap:13px;min-height:48px;padding:0 13px;border:1px solid transparent;border-radius:var(--radius-md);background:transparent;color:var(--moon-300);text-decoration:none;font:inherit}.sidebar nav a svg{width:21px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.sidebar nav a:hover,.sidebar nav a[aria-current="page"]{color:var(--moon-50);background:var(--material-panel-dark);border-color:var(--color-border)}.sidebar nav a[aria-current="page"] svg{color:var(--gold-300)}.sidebar-footer{display:grid;gap:4px;margin-top:auto}.sidebar-footer button{width:100%;cursor:pointer}.workspace-body{min-width:0}.workspace-header{position:sticky;top:0;z-index:10;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;min-height:76px;padding:0 28px;border-bottom:1px solid var(--color-border);background:rgba(16,25,22,.86);backdrop-filter:blur(18px)}.workspace-header>div:first-child{display:flex;gap:8px}.collapse-control,.mobile-menu{display:grid;place-items:center;min-width:44px;min-height:44px;border:1px solid var(--color-border);border-radius:50%;background:transparent;color:var(--moon-200);cursor:pointer}.mobile-menu{display:none}.mobile-menu span{display:block;width:18px;height:1px;background:currentColor;margin:2px}.page-context{text-align:center}.page-context span,.profile small{display:block;color:var(--gold-300);font-size:.62rem;letter-spacing:.16em}.page-context strong{display:block;margin-top:3px}.profile{display:flex;justify-content:flex-end;align-items:center;gap:10px}.profile>span{display:grid;place-items:center;width:38px;height:38px;border:1px solid var(--jade-400);border-radius:50%;color:var(--jade-400)}.profile strong{display:block;font-size:.82rem}.workspace-main{padding:clamp(20px,4vw,48px)}.is-collapsed{grid-template-columns:88px 1fr}.is-collapsed .sidebar nav a span,.is-collapsed .sidebar-footer,.is-collapsed :deep(.brand-copy){display:none}.is-collapsed .sidebar nav a{justify-content:center}.drawer-backdrop{display:none}@media(max-width:900px){.workspace,.is-collapsed{grid-template-columns:1fr}.sidebar{position:fixed;left:0;width:280px;transform:translateX(-102%);box-shadow:30px 0 80px rgba(0,0,0,.45)}.sidebar.is-open{transform:translateX(0)}.drawer-backdrop{display:block;position:fixed;inset:0;border:0;background:rgba(0,0,0,.6);z-index:15}.collapse-control{display:none}.mobile-menu{display:block}.workspace-header{grid-template-columns:1fr auto}.page-context{display:none}.workspace-main{padding:22px 16px}.profile div{display:none}}
 </style>
