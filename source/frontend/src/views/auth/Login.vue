@@ -25,10 +25,11 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { login } from '@/api/auth'
+import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
+const userStore = useUserStore()
 const formRef = ref(null)
 const loading = ref(false)
 
@@ -46,11 +47,9 @@ const handleLogin = async () => {
   try {
     await formRef.value.validate()
     loading.value = true
-    const { data } = await login(form)
-    localStorage.setItem('token', data.access_token)
-    localStorage.setItem('user', JSON.stringify(data.user))
+    await userStore.login(form)
     ElMessage.success('登录成功')
-    if (data.user.role === 'teacher') {
+    if (userStore.isTeacher) {
       router.push('/teacher')
     } else {
       router.push('/student')

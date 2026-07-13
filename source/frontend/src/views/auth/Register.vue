@@ -47,10 +47,11 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { register } from '@/api/auth'
+import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
+const userStore = useUserStore()
 const formRef = ref(null)
 const loading = ref(false)
 
@@ -72,7 +73,7 @@ const handleRegister = async () => {
   try {
     await formRef.value.validate()
     loading.value = true
-    await register(form)
+    await userStore.register(form)
     ElMessage.success('注册成功')
     router.push('/login')
   } catch (error) {
