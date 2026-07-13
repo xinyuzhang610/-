@@ -154,7 +154,7 @@ const recentRecords = ref([
 }
 
 .page-title {
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-size: 24px;
   font-weight: 600;
   color: var(--color-ink);
@@ -184,7 +184,7 @@ const recentRecords = ref([
 }
 
 .stat-value {
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-size: 32px;
   font-weight: 600;
   color: var(--color-ink);
@@ -193,7 +193,7 @@ const recentRecords = ref([
 }
 
 .stat-label {
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 14px;
   color: var(--color-ink-soft);
 }
@@ -211,7 +211,7 @@ const recentRecords = ref([
 }
 
 .chart-title {
-  font-family: var(--font-sans);
+  font-family: var(--font-heading);
   font-size: 16px;
   font-weight: 600;
   color: var(--color-ink);
@@ -247,7 +247,7 @@ const recentRecords = ref([
   top: -20px;
   left: 50%;
   transform: translateX(-50%);
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 12px;
   color: var(--color-ink-soft);
 }
@@ -256,7 +256,7 @@ const recentRecords = ref([
   display: flex;
   justify-content: space-around;
   padding: 8px 20px 0;
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 12px;
   color: var(--color-ink-soft);
 }
@@ -277,7 +277,7 @@ const recentRecords = ref([
 }
 
 .section-title {
-  font-family: var(--font-sans);
+  font-family: var(--font-heading);
   font-size: 16px;
   font-weight: 600;
   color: var(--color-ink);
@@ -309,7 +309,7 @@ const recentRecords = ref([
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-sans);
+  font-family: var(--font-ui);
   font-size: 12px;
   font-weight: 600;
   color: var(--color-ink-soft);
@@ -328,20 +328,20 @@ const recentRecords = ref([
 
 .ranking-name {
   flex: 1;
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 14px;
   color: var(--color-ink);
 }
 
 .ranking-count {
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 13px;
   color: var(--color-ink-soft);
 }
 
 /* 表格样式 */
 .records-card :deep(.el-table) {
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
 }
 
 .records-card :deep(.el-table th) {

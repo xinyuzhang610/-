@@ -119,7 +119,7 @@ const useTool = (tool) => {
 }
 
 .page-title {
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-size: 24px;
   font-weight: 600;
   color: var(--color-ink);
@@ -143,7 +143,7 @@ const useTool = (tool) => {
 }
 
 .stat-value {
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-size: 36px;
   font-weight: 600;
   color: var(--color-ink);
@@ -151,7 +151,7 @@ const useTool = (tool) => {
 }
 
 .stat-label {
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 14px;
   color: var(--color-ink-soft);
 }
@@ -166,7 +166,7 @@ const useTool = (tool) => {
 }
 
 .section-title {
-  font-family: var(--font-sans);
+  font-family: var(--font-heading);
   font-size: 16px;
   font-weight: 600;
   color: var(--color-ink);
@@ -190,7 +190,7 @@ const useTool = (tool) => {
 }
 
 .record-time {
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 13px;
   color: var(--color-ink-soft);
   width: 100px;
@@ -201,7 +201,7 @@ const useTool = (tool) => {
 }
 
 .record-tool {
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 14px;
   font-weight: 500;
   color: var(--color-ink);
@@ -209,7 +209,7 @@ const useTool = (tool) => {
 }
 
 .record-input {
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 13px;
   color: var(--color-ink-soft);
   flex: 1;
@@ -243,7 +243,7 @@ const useTool = (tool) => {
 
 .favorite-name {
   flex: 1;
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 15px;
   color: var(--color-ink);
 }
