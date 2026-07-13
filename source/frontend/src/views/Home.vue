@@ -218,7 +218,8 @@ const initInkEffect = () => {
   const canvas = heroMask.value
   if (!hero || !canvas) return
 
-  const canHover = window.matchMedia('(hover: hover)').matches
+  const canHover = typeof window.matchMedia === 'function'
+    && window.matchMedia('(hover: hover)').matches
   if (!canHover) return
 
   const ctx = canvas.getContext('2d')
@@ -420,7 +421,8 @@ const initSubtitleTypewriter = () => {
 // 区域墨水效果（画水墨，不是挖掉）
 const initSectionInkEffects = () => {
   const canvases = document.querySelectorAll('.section-canvas')
-  const canHover = window.matchMedia('(hover: hover)').matches
+  const canHover = typeof window.matchMedia === 'function'
+    && window.matchMedia('(hover: hover)').matches
   if (!canHover) return
 
   canvases.forEach((canvas) => {

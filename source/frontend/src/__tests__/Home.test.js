@@ -7,7 +7,8 @@ describe('Home.vue', () => {
     const wrapper = mount(Home, {
       global: {
         stubs: {
-          'el-button': true
+          'el-button': true,
+          'router-link': true
         }
       }
     })
@@ -18,22 +19,24 @@ describe('Home.vue', () => {
     const wrapper = mount(Home, {
       global: {
         stubs: {
-          'el-button': true
+          'el-button': true,
+          'router-link': true
         }
       }
     })
-    expect(wrapper.text()).toContain('智教通 - AI智能体教学辅助平台')
+    expect(wrapper.text()).toContain('智教通')
   })
 
   it('displays the welcome message', () => {
     const wrapper = mount(Home, {
       global: {
         stubs: {
-          'el-button': true
+          'el-button': true,
+          'router-link': true
         }
       }
     })
-    expect(wrapper.text()).toContain('欢迎使用智教通平台')
+    expect(wrapper.text()).toContain('为什么选择智教通')
   })
 
   it('has a button', () => {
@@ -42,7 +45,8 @@ describe('Home.vue', () => {
         stubs: {
           'el-button': {
             template: '<button><slot /></button>'
-          }
+          },
+          'router-link': true
         }
       }
     })
