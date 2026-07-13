@@ -8,11 +8,11 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     
     # 数据库配置
-    DATABASE_URL: str = "mysql+pymysql://root:password@localhost:3306/zjiaotong"
+    DATABASE_URL: str = "mysql+pymysql://root:admin@localhost:3306/zjiaotong"
     
     # DeepSeek API配置
     DEEPSEEK_API_KEY: str = ""
-    DEEPSEEK_MODEL: str = "dsv4"
+    DEEPSEEK_MODEL: str = "deepseek-chat"
     DEEPSEEK_API_URL: str = "https://api.deepseek.com"
     
     # CORS配置
