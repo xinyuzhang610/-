@@ -3,6 +3,7 @@
 
   /* Eastern-futurist palette */
   --ink-950: #101916;
+  --ink-900: #16221e;
   --ink-800: #24332e;
   --ink-600: #50615b;
   --ink-300: #aab6b1;
@@ -12,10 +13,12 @@
   --jade-200: #a9ddce;
   --gold-600: #9d6c1d;
   --gold-400: #d5a64f;
+  --gold-300: #e4c477;
   --gold-200: #f1d99d;
   --moon-50: #f8faf5;
   --moon-100: #f0f2e9;
   --moon-200: #e4e8dc;
+  --moon-300: #cbd3c9;
   --cinnabar-700: #8f2f2a;
   --cinnabar-500: #bd453b;
 
@@ -49,6 +52,7 @@
 
   /* Typography */
   --font-title: "Noto Serif SC", "Songti SC", STSong, Georgia, serif;
+  --font-display: var(--font-title);
   --font-heading: "Noto Serif SC", "Songti SC", STSong, Georgia, serif;
   --font-body: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   --font-ui: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
@@ -87,6 +91,8 @@
   --material-paper: rgb(248 250 245 / 92%);
   --material-glass: rgb(240 242 233 / 72%);
   --material-panel: linear-gradient(145deg, rgb(255 255 255 / 88%), rgb(228 232 220 / 62%));
+  --material-panel-dark: linear-gradient(145deg, rgb(255 255 255 / 7%), rgb(66 185 154 / 3%));
+  --material-panel-strong: linear-gradient(145deg, rgb(255 255 255 / 11%), rgb(66 185 154 / 7%));
   --material-border: 1px solid rgb(255 255 255 / 64%);
   --material-blur: blur(18px) saturate(130%);
 
@@ -94,6 +100,8 @@
   --effect-brand-seal-shadow: rgb(23 107 90 / 16%);
   --effect-button-gold-shadow: rgb(157 108 29 / 20%);
   --effect-panel-inlay: rgb(213 166 79 / 18%);
+  --effect-jade-soft: rgb(66 185 154 / 14%);
+  --effect-gold-soft: rgb(213 166 79 / 13%);
   --effect-core-surface: rgb(169 221 206 / 16%);
   --effect-core-halo-gold: rgb(241 217 157 / 86%);
   --effect-core-halo-jade: rgb(66 185 154 / 42%);
@@ -114,6 +122,7 @@
 
   /* Motion */
   --duration-fast: 150ms;
+  --motion-fast: var(--duration-fast);
   --duration-normal: 300ms;
   --duration-slow: 500ms;
   --duration-reveal: 700ms;
