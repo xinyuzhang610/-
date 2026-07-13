@@ -4,11 +4,13 @@ import { useRoute, useRouter } from 'vue-router'
 import { getTool } from '../../api/tools'
 import { sendChat } from '../../api/chat'
 import StatusState from '../../components/ui/StatusState.vue'
+import { useDemoMode } from '../../composables/useDemoMode'
 
 const route = useRoute(), router = useRouter(), tool = ref(null), loadingTool = ref(true), toolError = ref('')
+const { enabled: demoEnabled, getDemoTool } = useDemoMode()
 const input = ref(''), pending = ref(false), error = ref(''), sessionId = ref(''), failedText = ref(''), feed = ref(null), messages = ref([])
 const toolId = computed(() => Number(route.params.id))
-async function loadTool() { loadingTool.value = true; toolError.value = ''; try { const { data } = await getTool(route.params.id); tool.value = data; messages.value = [{ id: 'welcome', role: 'assistant', content: `我是${data.name}。${data.description || '请告诉我你想解决的问题。'}` }] } catch (cause) { toolError.value = cause?.response?.data?.detail || '工具详情读取失败。' } finally { loadingTool.value = false } }
+async function loadTool() { loadingTool.value = true; toolError.value = ''; try { const data = demoEnabled.value ? getDemoTool(route.params.id) : (await getTool(route.params.id)).data; if (!data) throw new Error('工具不存在'); tool.value = data; messages.value = [{ id: 'welcome', role: 'assistant', content: `我是${data.name}。${data.description || '请告诉我你想解决的问题。'}` }] } catch (cause) { toolError.value = cause?.response?.data?.detail || cause.message || '工具详情读取失败。' } finally { loadingTool.value = false } }
 async function submit(text = input.value) { const question = text.trim(); if (!question || pending.value || !tool.value) return; pending.value = true; error.value = ''; failedText.value = question; try { const { data } = await sendChat({ message: question, tool_id: toolId.value, session_id: sessionId.value || undefined }); messages.value.push({ id: `u-${Date.now()}`, role: 'user', content: question }, { id: `a-${Date.now()}`, role: 'assistant', content: data.reply }); sessionId.value = data.session_id; input.value = ''; failedText.value = ''; await nextTick(); if (feed.value) feed.value.scrollTop = feed.value.scrollHeight } catch (cause) { error.value = cause?.response?.data?.detail || '请求失败，输入内容已为你保留。'; input.value = question } finally { pending.value = false } }
 async function share() { try { await navigator.clipboard.writeText(window.location.href) } catch { error.value = '复制失败，请从浏览器地址栏复制链接。' } }
 onMounted(loadTool)
