@@ -66,7 +66,7 @@ describe('useMotionPreference', () => {
 
 - [ ] **Step 2: Run the test and verify the module is missing**
 
-Run: `cd source/frontend && npm test -- --run src/__tests__/motionPreference.test.js`  
+Run: `cd source/frontend && npm test -- --run src/__tests__/motionPreference.test.js`
 Expected: FAIL because `useMotionPreference.js` does not exist.
 
 - [ ] **Step 3: Implement the motion preference composable**
@@ -94,7 +94,7 @@ Return `{ target, visible }`; use `IntersectionObserver` with `{ threshold: 0.18
 
 - [ ] **Step 6: Run the focused and existing tests**
 
-Run: `cd source/frontend && npm test -- --run`  
+Run: `cd source/frontend && npm test -- --run`
 Expected: all tests PASS.
 
 - [ ] **Step 7: Commit**
@@ -140,7 +140,7 @@ describe('brand primitives', () => {
 
 - [ ] **Step 2: Run the tests and confirm missing components**
 
-Run: `cd source/frontend && npm test -- --run src/__tests__/brandPrimitives.test.js`  
+Run: `cd source/frontend && npm test -- --run src/__tests__/brandPrimitives.test.js`
 Expected: FAIL with component import errors.
 
 - [ ] **Step 3: Implement BrandMark, AppButton, GlassPanel, and StatusState**
@@ -157,7 +157,7 @@ Use a Canvas 2D renderer with a capped particle count, `requestAnimationFrame`, 
 
 - [ ] **Step 6: Run tests and build**
 
-Run: `cd source/frontend && npm test -- --run && npm run build`  
+Run: `cd source/frontend && npm test -- --run && npm run build`
 Expected: all tests PASS and Vite build succeeds.
 
 - [ ] **Step 7: Commit**
@@ -209,7 +209,7 @@ Convert selected images to WebP, retain useful source dimensions, and export obj
 
 - [ ] **Step 5: Run asset tests and build**
 
-Run: `cd source/frontend && npm test -- --run src/__tests__/assets.test.js && npm run build`  
+Run: `cd source/frontend && npm test -- --run src/__tests__/assets.test.js && npm run build`
 Expected: manifest test PASS and images resolve in the production build.
 
 - [ ] **Step 6: Commit**
@@ -246,7 +246,7 @@ it('renders the complete knowledge-awakening narrative', () => {
 
 - [ ] **Step 2: Run Home tests and verify they fail against the old page**
 
-Run: `cd source/frontend && npm test -- --run src/__tests__/Home.test.js`  
+Run: `cd source/frontend && npm test -- --run src/__tests__/Home.test.js`
 Expected: FAIL because the new headline and test IDs are absent.
 
 - [ ] **Step 3: Implement HeroSection and Home composition**
@@ -263,7 +263,7 @@ At widths below 900px, replace sticky split layouts with a single flow; below 64
 
 - [ ] **Step 6: Run Home tests and production build**
 
-Run: `cd source/frontend && npm test -- --run src/__tests__/Home.test.js && npm run build`  
+Run: `cd source/frontend && npm test -- --run src/__tests__/Home.test.js && npm run build`
 Expected: tests PASS and Vite build succeeds.
 
 - [ ] **Step 7: Commit**
@@ -289,7 +289,7 @@ Test that `?role=teacher` preselects teacher, student selection links to `/stude
 
 - [ ] **Step 2: Run the focused test and verify failure**
 
-Run: `cd source/frontend && npm test -- --run src/__tests__/authExperience.test.js`  
+Run: `cd source/frontend && npm test -- --run src/__tests__/authExperience.test.js`
 Expected: FAIL because `IdentitySwitch` is missing.
 
 - [ ] **Step 3: Implement AuthScene and IdentitySwitch**
@@ -306,7 +306,7 @@ Replace corrupted comments and `meta.title` values with valid UTF-8 Chinese with
 
 - [ ] **Step 6: Run tests and commit**
 
-Run: `cd source/frontend && npm test -- --run && npm run build`  
+Run: `cd source/frontend && npm test -- --run && npm run build`
 Expected: all tests PASS and build succeeds.
 
 ```bash
@@ -331,7 +331,7 @@ Assert the shell exposes “需求引导 / 我的工具 / 数据洞察”, activ
 
 - [ ] **Step 2: Run the focused test and confirm failure**
 
-Run: `cd source/frontend && npm test -- --run src/__tests__/teacherExperience.test.js`  
+Run: `cd source/frontend && npm test -- --run src/__tests__/teacherExperience.test.js`
 Expected: FAIL against the old shell.
 
 - [ ] **Step 3: Rebuild the shared workspace shell**
@@ -348,7 +348,7 @@ Tools distinguishes preset/self-created/external types with clear actions. Dashb
 
 - [ ] **Step 6: Run tests, build, and commit**
 
-Run: `cd source/frontend && npm test -- --run && npm run build`  
+Run: `cd source/frontend && npm test -- --run && npm run build`
 Expected: all tests PASS and build succeeds.
 
 ```bash
@@ -374,7 +374,7 @@ Assert guidance exposes three selectable interest layers, Plaza supports categor
 
 - [ ] **Step 2: Run the focused test and confirm failure**
 
-Run: `cd source/frontend && npm test -- --run src/__tests__/studentExperience.test.js`  
+Run: `cd source/frontend && npm test -- --run src/__tests__/studentExperience.test.js`
 Expected: FAIL because the new primitives and state behavior are absent.
 
 - [ ] **Step 3: Rebuild Guidance as a knowledge universe**
@@ -391,7 +391,7 @@ Chat and ToolUse use the two-column learning-context layout on desktop and one c
 
 - [ ] **Step 6: Run tests, build, and commit**
 
-Run: `cd source/frontend && npm test -- --run && npm run build`  
+Run: `cd source/frontend && npm test -- --run && npm run build`
 Expected: all tests PASS and build succeeds.
 
 ```bash
@@ -420,7 +420,7 @@ it('marks demo data instead of presenting it as live API data', () => {
 
 - [ ] **Step 2: Run the test and confirm the composable is missing**
 
-Run: `cd source/frontend && npm test -- --run src/__tests__/demoMode.test.js`  
+Run: `cd source/frontend && npm test -- --run src/__tests__/demoMode.test.js`
 Expected: FAIL on missing module.
 
 - [ ] **Step 3: Implement explicit environment-controlled demo mode**
@@ -437,7 +437,7 @@ When enabled, show a persistent “演示数据” chip. When disabled, show loa
 
 - [ ] **Step 6: Run tests and commit**
 
-Run: `cd source/frontend && npm test -- --run && npm run build`  
+Run: `cd source/frontend && npm test -- --run && npm run build`
 Expected: all tests PASS and build succeeds.
 
 ```bash
@@ -459,7 +459,7 @@ Test one `main` landmark per page, an `h1` on Home/Login/workspace landing pages
 
 - [ ] **Step 2: Run the test and record failing assertions**
 
-Run: `cd source/frontend && npm test -- --run src/__tests__/accessibility.test.js`  
+Run: `cd source/frontend && npm test -- --run src/__tests__/accessibility.test.js`
 Expected: FAIL for any missing landmark or accessible name.
 
 - [ ] **Step 3: Fix responsive layouts**
@@ -476,7 +476,7 @@ Confirm particle animation stops when hidden/unmounted, respects reduced motion,
 
 - [ ] **Step 6: Run the full verification suite**
 
-Run: `cd source/frontend && npm test -- --run && npm run build`  
+Run: `cd source/frontend && npm test -- --run && npm run build`
 Expected: all tests PASS; build succeeds; no chunk exceeds the current 1.04 MB baseline.
 
 - [ ] **Step 7: Commit**
@@ -494,7 +494,7 @@ git commit -m "perf: polish responsive accessible frontend"
 
 - [ ] **Step 1: Start the presentation build**
 
-Run: `cd source/frontend && npm run dev -- --host 127.0.0.1 --port 5173`  
+Run: `cd source/frontend && npm run dev -- --host 127.0.0.1 --port 5173`
 Expected: Vite reports `http://127.0.0.1:5173/`.
 
 - [ ] **Step 2: Inspect the landing page in a real browser**
@@ -515,7 +515,7 @@ Capture Home, teacher dashboard, student guidance, and student chat at 1440×900
 
 - [ ] **Step 6: Fix defects and rerun verification**
 
-Run: `cd source/frontend && npm test -- --run && npm run build`  
+Run: `cd source/frontend && npm test -- --run && npm run build`
 Expected: all tests PASS and production build succeeds after fixes.
 
 - [ ] **Step 7: Write the QA report and commit**
@@ -526,4 +526,3 @@ Record commands, results, reviewed routes, remaining backend-only limitations, a
 git add source/frontend docs/superpowers/reports/2026-07-13-frontend-redesign-qa.md
 git commit -m "test: verify eastern future frontend experience"
 ```
-

@@ -7,4 +7,3 @@ const authClient = axios.create({
 
 export const login = (credentials) => authClient.post('/login', credentials)
 export const register = (profile) => authClient.post('/register', profile)
-
