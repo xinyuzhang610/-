@@ -1,6 +1,7 @@
 <script setup>
 import RevealSection from '../motion/RevealSection.vue'
 import BrandMark from '../brand/BrandMark.vue'
+import EntryLink from './EntryLink.vue'
 </script>
 
 <template>
@@ -11,8 +12,8 @@ import BrandMark from '../brand/BrandMark.vue'
       <h2>从今天的问题出发，<br>长成明天的学习路径</h2>
       <p class="call__promise">教师更从容地组织教学，学生更主动地理解世界。每一次真实提问，都值得被看见、被连接、被继续。</p>
       <div class="call__actions">
-        <RouterLink to="/login?role=teacher">以教师身份开始 <span aria-hidden="true">→</span></RouterLink>
-        <RouterLink to="/student/guidance">以学生身份探索 <span aria-hidden="true">→</span></RouterLink>
+        <EntryLink role="teacher" label="以教师身份开始" to="/login?role=teacher" />
+        <EntryLink role="student" label="以学生身份探索" to="/student/guidance" />
       </div>
     </div>
   </RevealSection>
@@ -27,5 +28,4 @@ import BrandMark from '../brand/BrandMark.vue'
 h2 { margin-top: 1.2rem; font-family: var(--font-title); font-size: clamp(2.7rem, 6vw, 6rem); font-weight: 500; line-height: 1.08; }
 .call__promise { max-width: 42rem; margin-top: 2rem; color: rgb(248 250 245 / 68%); }
 .call__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; margin-top: 2.5rem; }
-.call__actions a { display: inline-flex; min-height: 3rem; align-items: center; gap: 1rem; padding: .7rem 1.2rem; border: 1px solid var(--gold-400); border-radius: 999px; color: var(--moon-50); text-decoration: none; }.call__actions a:last-child { border-color: var(--jade-200); }
 </style>
