@@ -69,7 +69,7 @@ const routes = [
   {
     path: '/student',
     component: () => import('../layout/index.vue'),
-    meta: { requiresAuth: false },
+    meta: { requiresAuth: true, role: 'student' },
     children: [
       { path: '', redirect: '/student/plaza' },
       { path: 'plaza', name: 'StudentPlaza', component: () => import('../views/student/Plaza.vue'), meta: { title: '工具广场' } },
@@ -82,7 +82,13 @@ const routes = [
     path: '/tool/:id',
     name: 'ToolUse',
     component: () => import('../views/student/ToolUse.vue'),
-    meta: { requiresAuth: false, title: '使用工具' }
+    meta: { requiresAuth: true, title: '使用工具' }
+  },
+  {
+    path: '/share/:shareCode',
+    name: 'SharedTool',
+    component: () => import('../views/student/ToolUse.vue'),
+    meta: { requiresAuth: false, title: '分享工具' }
   },
   {
     path: '/',
@@ -98,6 +104,11 @@ const router = createRouter({ history: createWebHistory(), routes })
 router.beforeEach((to) => {
   const token = localStorage.getItem('token')
   if (to.meta.requiresAuth && !token) return '/login'
+  const requiredRole = to.matched.map(record => record.meta.role).find(Boolean)
+  const currentRole = localStorage.getItem('userRole')
+  if (requiredRole && currentRole && currentRole !== requiredRole && currentRole !== 'admin') {
+    return currentRole === 'student' ? '/student/guidance' : '/teacher/home'
+  }
   if (to.path === '/login' && token) return '/teacher/home'
   return true
 })

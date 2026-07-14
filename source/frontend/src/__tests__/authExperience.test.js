@@ -45,13 +45,17 @@ describe('authentication experience', () => {
     expect(localStorage.getItem('token')).toBe('real-token')
   })
 
-  it('lets students enter guidance without registering', async () => {
+  it('requires students to authenticate before entering guidance', async () => {
     const router = await makeRouter('/login?role=student')
+    loginRequest.mockResolvedValue({ data:{ access_token:'student-token', user:{ name:'小林', role:'student' } } })
     const wrapper = mount(Login, { global:{ plugins:[router, createPinia()] } })
     expect(wrapper.get('input[value="student"]').element.checked).toBe(true)
-    await wrapper.get('.student-entry button').trigger('click')
+    await wrapper.get('#login-username').setValue('student01')
+    await wrapper.get('#login-password').setValue('secure12')
+    await wrapper.get('form').trigger('submit')
     await flushPromises()
     expect(router.currentRoute.value.path).toBe('/student/guidance')
+    expect(localStorage.getItem('token')).toBe('student-token')
   })
 
   it('keeps registration labels visible and reports mismatched passwords', async () => {

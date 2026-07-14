@@ -1,5 +1,5 @@
-import axios from 'axios'
+import { createApiClient } from './client'
 
-const client = axios.create({ baseURL: '/api/chat', timeout: 15000 })
+const client = createApiClient('/api/chat', 15000)
 
 export const sendChat = (payload) => client.post('/', payload)

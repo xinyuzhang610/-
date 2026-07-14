@@ -1,13 +1,18 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { getPlaza } from '../../api/plaza'
+import { getRecommendedTools } from '../../api/tools'
 import StatusState from '../../components/ui/StatusState.vue'
 import ToolCard from '../../components/student/ToolCard.vue'
 import { useDemoMode } from '../../composables/useDemoMode'
 
 const categories = ref([]), tools = ref([]), hotTools = ref([])
 const category = ref(''), search = ref(''), loading = ref(true), error = ref('')
+const recommendation = ref('')
 const { enabled: demoEnabled, getDemoData } = useDemoMode()
+const route = useRoute()
+const router = useRouter()
 async function load() {
   loading.value = true; error.value = ''
   try {
@@ -16,18 +21,29 @@ async function load() {
       tools.value = demo.tools.filter(item => (!category.value || item.category === category.value) && (!search.value.trim() || `${item.name} ${item.description}`.includes(search.value.trim())))
       return
     }
+    if (route.query.subject && !search.value.trim()) {
+      const { data } = await getRecommendedTools(route.query.subject, route.query.difficulty || route.query.approach || '兴趣激发')
+      tools.value = data.items || []
+      categories.value = [{ value: '文科', label: '文科' }, { value: '理科', label: '理科' }, { value: '通用', label: '通用' }]
+      hotTools.value = tools.value.slice(0, 3)
+      recommendation.value = `根据“${route.query.difficulty || '当前困惑'} · ${route.query.subject} · ${route.query.approach || '学习方式'}”为你匹配`
+      return
+    }
+    recommendation.value = ''
     const { data } = await getPlaza({ category: category.value, search: search.value.trim() })
     categories.value = data.categories || []; tools.value = data.tools || []; hotTools.value = data.hot_tools || []
   } catch (cause) { error.value = cause?.response?.data?.detail || '工具广场暂时无法连接，请稍后重试。' }
   finally { loading.value = false }
 }
-async function pick(value) { category.value = category.value === value ? '' : value; await load() }
-onMounted(load)
+async function pick(value) { category.value = category.value === value ? '' : value; if (route.query.subject) await router.replace({ query: {} }); await load() }
+onMounted(() => { category.value = route.query.subject === '语文' || route.query.subject === '英语' || route.query.subject === '历史' ? '文科' : ['数学', '物理', '化学'].includes(route.query.subject) ? '理科' : ''; load() })
+watch(() => route.query, () => { category.value = route.query.subject === '语文' || route.query.subject === '英语' || route.query.subject === '历史' ? '文科' : ['数学', '物理', '化学'].includes(route.query.subject) ? '理科' : ''; load() }, { deep: true })
 </script>
 
 <template>
   <main class="plaza-page">
     <header><p class="eyebrow">KNOWLEDGE TOOL ATLAS</p><h1>工具广场</h1><p>从真实的公共工具库中，找到与你此刻问题最接近的解法。</p></header>
+    <p v-if="recommendation" class="recommendation" role="status">{{ recommendation }}</p>
     <form class="search-panel" role="search" @submit.prevent="load">
       <label aria-label="搜索工具"><span>搜索工具</span><input v-model="search" type="search" placeholder="输入工具名称或能力关键词" /></label>
       <button type="submit">搜索</button>
@@ -45,4 +61,5 @@ onMounted(load)
 
 <style scoped>
 .plaza-page{min-height:100%;padding:clamp(28px,4vw,58px);background:radial-gradient(circle at 86% 6%,rgb(213 166 79 / 12%),transparent 24%),#101916;color:var(--moon-50)}header{max-width:760px}.eyebrow{color:var(--jade-400);font-size:.72rem;letter-spacing:.22em}h1{margin:10px 0;font:500 clamp(2.5rem,5vw,4.5rem) var(--font-display)}header p:last-child{color:var(--moon-300);line-height:1.8}.search-panel{display:grid;grid-template-columns:1fr auto;max-width:860px;margin:34px 0 18px;padding:6px;border:1px solid rgb(213 166 79 / 30%);border-radius:18px;background:rgb(255 255 255 / 5%)}.search-panel label span{position:absolute;overflow:hidden;width:1px;height:1px;clip:rect(0,0,0,0)}.search-panel input{width:100%;min-height:48px;padding:0 16px;border:0;background:transparent;color:var(--moon-50);font:inherit;outline:0}.search-panel button,.category-tabs button{min-height:44px;border:0;border-radius:12px;cursor:pointer}.search-panel button{padding:0 26px;background:var(--gold-400);color:var(--ink-950);font-weight:700}.category-tabs{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:42px}.category-tabs button{padding:0 18px;border:1px solid rgb(203 211 201 / 20%);background:transparent;color:var(--moon-300)}.category-tabs button[aria-pressed="true"]{border-color:var(--jade-400);background:rgb(66 185 154 / 12%);color:var(--moon-50)}.section-heading{display:flex;align-items:end;justify-content:space-between;margin-bottom:18px}.section-heading h2{font:500 1.8rem var(--font-heading)}.section-heading span{color:var(--ink-300)}.tool-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}@media(max-width:1000px){.tool-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:620px){.plaza-page{padding:24px 16px}.search-panel{grid-template-columns:1fr}.search-panel button{width:100%}.tool-grid{grid-template-columns:1fr}}
+.recommendation{display:inline-block;margin:24px 0 -12px;padding:9px 13px;border:1px solid var(--jade-400);border-radius:999px;background:rgb(66 185 154 / 10%);color:var(--jade-200);font-size:.82rem}
 </style>

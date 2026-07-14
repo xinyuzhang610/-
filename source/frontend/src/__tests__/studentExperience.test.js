@@ -70,16 +70,16 @@ describe('student knowledge journey', () => {
 
   it('derives labeled record metrics from the real usage response', async () => {
     usageRequest.mockResolvedValue({ data: [{ id: 1, tool_id: 7, input_text: '勾股定理', output_text: '回答', created_at: '2026-07-14T08:00:00Z' }] })
-    localStorage.setItem('user_id', '8')
     const wrapper = await mountAt(Records, '/student/records')
     await flushPromises()
     expect(wrapper.text()).toContain('使用次数')
     expect(wrapper.text()).toContain('使用工具数')
     expect(wrapper.text()).toContain('1')
-    expect(usageRequest).toHaveBeenCalledWith('8')
+    expect(usageRequest).toHaveBeenCalledWith()
   })
 
   it('loads the route tool and sends its numeric ID with chat', async () => {
+    localStorage.setItem('token', 'student-session')
     toolRequest.mockResolvedValue({ data: { id: 42, name: '概念辨析器', description: '厘清易混概念', category: '理科', usage_count: 3 } })
     chatRequest.mockResolvedValue({ data: { reply: '已辨析', session_id: 'session-1', tool_name: '概念辨析器' } })
     const wrapper = await mountAt(ToolUse, '/tool/42')

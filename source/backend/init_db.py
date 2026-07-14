@@ -1,14 +1,20 @@
 from sqlalchemy import create_engine, text
+from sqlalchemy.engine import make_url
 from models.database import engine, Base, SessionLocal
 from models import User, Tool, ToolTemplate, UsageLog, Favorite, RecommendRule
 from sqlalchemy.orm import Session
 from config import settings
 import json
 
+def server_url_from_database_url(database_url: str) -> str:
+    """Return a SQLAlchemy URL that connects to the server without selecting a database."""
+    return make_url(database_url)._replace(database=None).render_as_string(hide_password=False)
+
+
 def create_database_if_not_exists():
     """如果数据库不存在则创建"""
     # 连接到MySQL服务器（不指定数据库）
-    server_url = settings.DATABASE_URL.split("/zjiaotong")[0]
+    server_url = server_url_from_database_url(settings.DATABASE_URL)
     server_engine = create_engine(server_url)
 
     with server_engine.connect() as conn:

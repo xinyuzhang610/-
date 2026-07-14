@@ -1,6 +1,13 @@
-import axios from 'axios'
-const client = axios.create({ baseURL: '/api/tools', timeout: 10000 })
+import { createApiClient } from './client'
+const client = createApiClient('/api/tools')
 export const getPresetTools = (category) => client.get('/presets', { params: category ? { category } : {} })
-export const getTool = (id) => client.get(`/${id}`)
+export const getRecommendedTools = (subject, needType) => client.get('/recommend', { params: { subject, need_type: needType } })
+export const getTool = (id) => client.get(`/id/${id}`)
+export const getSharedTool = (shareCode) => client.get(`/share/${shareCode}`)
+export const getMyTools = () => client.get('/mine/list')
+export const getTemplates = () => client.get('/templates/list')
+export const createTool = (payload) => client.post('/', payload)
+export const updateTool = (id, payload) => client.put(`/${id}`, payload)
 export const deleteTool = (id) => client.delete(`/${id}`)
 export const getShareLink = (id) => client.get(`/${id}/share`)
+export const revokeShare = (id) => client.post(`/${id}/share/revoke`)

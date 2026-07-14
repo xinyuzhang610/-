@@ -1,6 +1,6 @@
-import axios from 'axios'
+import { createApiClient } from './client'
 
-const client = axios.create({ baseURL: '/api/plaza', timeout: 10000 })
+const client = createApiClient('/api/plaza')
 
 export const getPlaza = ({ category = '', search = '' } = {}) =>
   client.get('/', { params: { ...(category && { category }), ...(search && { search }) } })

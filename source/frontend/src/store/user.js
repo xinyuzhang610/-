@@ -12,13 +12,15 @@ export const useUserStore = defineStore('user', () => {
 
   // 登录
   const login = (loginData) => {
-    token.value = loginData.token
-    userName.value = loginData.userName
-    userRole.value = loginData.userRole || 'teacher'
+    const receivedToken = loginData.access_token || loginData.token
+    const user = loginData.user || {}
+    token.value = receivedToken
+    userName.value = loginData.userName || user.name || user.username || ''
+    userRole.value = loginData.userRole || user.role || 'teacher'
 
-    localStorage.setItem('token', loginData.token)
-    localStorage.setItem('userName', loginData.userName)
-    localStorage.setItem('userRole', loginData.userRole || 'teacher')
+    localStorage.setItem('token', receivedToken)
+    localStorage.setItem('userName', userName.value)
+    localStorage.setItem('userRole', userRole.value)
   }
 
   // 登出

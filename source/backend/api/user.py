@@ -5,6 +5,8 @@ from schemas.user import UserCreate, UserResponse, LoginRequest, TokenResponse, 
 from services.user_service import create_user, authenticate_user, get_user_by_id, get_user_by_username, update_user
 from utils.security import generate_token
 from config import settings
+from api.dependencies import get_current_user
+from models.user import User
 
 router = APIRouter()
 
@@ -12,6 +14,8 @@ router = APIRouter()
 @router.post("/register", response_model=UserResponse)
 def register(user: UserCreate, db: Session = Depends(get_db)):
     """用户注册"""
+    if user.role.value == "admin":
+        raise HTTPException(status_code=403, detail="管理员账号只能由受控初始化流程创建")
     # 检查用户名是否已存在
     existing_user = get_user_by_username(db, user.username)
     if existing_user:
@@ -39,20 +43,17 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
     )
 
 # 获取用户信息
-@router.get("/profile/{user_id}", response_model=UserResponse)
-def get_profile(user_id: int, db: Session = Depends(get_db)):
+@router.get("/profile", response_model=UserResponse)
+def get_profile(current_user: User = Depends(get_current_user)):
     """获取用户信息"""
-    user = get_user_by_id(db, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="用户不存在")
-    return user
+    return current_user
 
 # 更新用户信息
-@router.put("/profile/{user_id}", response_model=UserResponse)
-def update_profile(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db)):
+@router.put("/profile", response_model=UserResponse)
+def update_profile(user_update: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """更新用户信息"""
     update_data = user_update.model_dump(exclude_unset=True)
-    user = update_user(db, user_id, update_data)
+    user = update_user(db, current_user.id, update_data)
     if not user:
         raise HTTPException(status_code=404, detail="用户不存在")
     return user

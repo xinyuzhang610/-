@@ -1,9 +1,6 @@
-import axios from 'axios'
+import { createApiClient } from './client'
 
-const authClient = axios.create({
-  baseURL: '/api/auth',
-  timeout: 10000
-})
+const authClient = createApiClient('/api/auth')
 
 export const login = (credentials) => authClient.post('/login', credentials)
 export const register = (profile) => authClient.post('/register', profile)

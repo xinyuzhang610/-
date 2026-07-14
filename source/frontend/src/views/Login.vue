@@ -7,19 +7,13 @@
         <div class="auth-heading"><span>WELCOME BACK</span><h1 id="login-title">进入智教通</h1><p>选择身份，继续你的智慧教学旅程。</p></div>
         <IdentitySwitch v-model="selectedRole" />
 
-        <form v-if="selectedRole === 'teacher'" class="auth-form" @submit.prevent="handleLogin">
+        <form class="auth-form" @submit.prevent="handleLogin">
           <div class="field"><label for="login-username">用户名</label><input id="login-username" v-model.trim="form.username" autocomplete="username" minlength="3" required placeholder="请输入用户名"></div>
           <div class="field"><label for="login-password">密码</label><input id="login-password" v-model="form.password" autocomplete="current-password" minlength="6" required type="password" placeholder="请输入密码"></div>
           <p v-if="errorMessage" class="form-error" role="alert">{{ errorMessage }}</p>
-          <AppButton class="submit-button" type="submit" variant="gold" :loading="loading">登录教师工作台</AppButton>
-          <p class="auth-footnote">还没有账号？<RouterLink to="/register?role=teacher">创建教师账号</RouterLink></p>
+          <AppButton class="submit-button" type="submit" :variant="selectedRole === 'teacher' ? 'gold' : 'jade'" :loading="loading">登录{{ selectedRole === 'teacher' ? '教师工作台' : '学生学习空间' }}</AppButton>
+          <p class="auth-footnote">还没有账号？<RouterLink :to="`/register?role=${selectedRole}`">创建{{ selectedRole === 'teacher' ? '教师' : '学生' }}账号</RouterLink></p>
         </form>
-
-        <div v-else class="student-entry">
-          <div class="student-pulse" aria-hidden="true"></div>
-          <h2>不设门槛，只问好奇</h2><p>无需注册，先从兴趣引导发现适合你的 AI 学习工具。</p>
-          <AppButton variant="jade" @click="enterStudent">进入兴趣星图</AppButton>
-        </div>
       </div>
     </section>
   </main>
@@ -50,8 +44,9 @@ async function handleLogin() {
   try {
     const response = await loginRequest({ username: form.username, password: form.password })
     const payload = response.data
-    userStore.login({ token: payload.access_token, userName: payload.user?.name || form.username, userRole: payload.user?.role || 'teacher' })
-    await router.push('/teacher/home')
+    userStore.login(payload)
+    const fallback = payload.user?.role === 'student' ? '/student/guidance' : '/teacher/home'
+    await router.push(route.query.redirect || fallback)
   } catch (error) {
     errorMessage.value = error.response?.data?.detail || '暂时无法登录，请检查网络或稍后重试。'
   } finally {
@@ -59,10 +54,6 @@ async function handleLogin() {
   }
 }
 
-async function enterStudent() {
-  localStorage.setItem('userRole', 'student')
-  await router.push('/student/guidance')
-}
 </script>
 
 <style scoped>

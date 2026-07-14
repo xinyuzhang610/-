@@ -1,20 +1,19 @@
 # utils/security.py
-import hashlib
-import secrets
+import bcrypt
 from datetime import datetime, timedelta
 from typing import Optional
 import jwt
 
-# 密码哈希 salt
-SALT = "zjiaotong_salt_2024"
-
 def hash_password(password: str) -> str:
-    """密码哈希"""
-    return hashlib.sha256(f"{password}{SALT}".encode()).hexdigest()
+    """Hash a password with a per-password bcrypt salt."""
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 def verify_password(password: str, hashed_password: str) -> bool:
     """验证密码"""
-    return hash_password(password) == hashed_password
+    try:
+        return bcrypt.checkpw(password.encode("utf-8"), hashed_password.encode("utf-8"))
+    except (ValueError, TypeError):
+        return False
 
 def generate_token(user_id: int, role: str, secret_key: str) -> str:
     """生成 JWT token"""

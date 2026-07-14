@@ -1,10 +1,49 @@
 import httpx
 from config import settings
 
+
+class AIConfigurationError(RuntimeError):
+    """Raised when the selected AI provider cannot be used safely."""
+
+
+class DeepSeekRequestError(RuntimeError):
+    """A safe, user-facing description of an upstream DeepSeek failure."""
+
+    def __init__(self, message: str, status_code: int):
+        super().__init__(message)
+        self.status_code = status_code
+
+
+def _request_error(response: httpx.Response) -> DeepSeekRequestError:
+    """Convert an upstream response into a message that never exposes credentials."""
+    status_code = response.status_code
+    try:
+        detail = response.json().get("error", {}).get("message", "")
+    except (ValueError, AttributeError):
+        detail = ""
+
+    if status_code == 400:
+        message = "DeepSeek 模型或请求参数无效"
+    elif status_code == 401:
+        message = "DeepSeek API Key 无效或已失效"
+    elif status_code == 429:
+        message = "DeepSeek 请求过于频繁，请稍后重试"
+    elif 500 <= status_code <= 599:
+        message = "DeepSeek 服务暂时不可用，请稍后重试"
+    else:
+        message = "DeepSeek 请求失败"
+
+    # The provider diagnostic is useful for operations, but is deliberately
+    # bounded and never includes request headers or environment values.
+    if detail:
+        message = f"{message}（{detail[:240]}）"
+    return DeepSeekRequestError(message, status_code)
+
 async def chat_with_deepseek(message: str, system_prompt: str = None) -> str:
-    # 如果没有配置API Key，返回模拟数据
-    if not settings.DEEPSEEK_API_KEY or settings.DEEPSEEK_API_KEY == "your_api_key_here":
+    if settings.AI_PROVIDER == "mock":
         return mock_reply(message, system_prompt)
+    if not settings.DEEPSEEK_API_KEY or settings.DEEPSEEK_API_KEY == "your_api_key_here":
+        raise AIConfigurationError("DeepSeek 已启用，但未配置有效的 DEEPSEEK_API_KEY")
 
     headers = {
         "Authorization": f"Bearer {settings.DEEPSEEK_API_KEY}",
@@ -23,16 +62,22 @@ async def chat_with_deepseek(message: str, system_prompt: str = None) -> str:
         "max_tokens": 2000
     }
 
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            f"{settings.DEEPSEEK_API_URL}/v1/chat/completions",
-            headers=headers,
-            json=payload,
-            timeout=30.0
-        )
-        response.raise_for_status()
-        data = response.json()
-        return data["choices"][0]["message"]["content"]
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{settings.DEEPSEEK_API_URL}/v1/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=30.0
+            )
+            if response.is_error:
+                raise _request_error(response)
+            data = response.json()
+            return data["choices"][0]["message"]["content"]
+    except httpx.TimeoutException as error:
+        raise DeepSeekRequestError("DeepSeek 请求超时，请稍后重试", 504) from error
+    except httpx.RequestError as error:
+        raise DeepSeekRequestError("无法连接 DeepSeek 服务，请稍后重试", 503) from error
 
 
 def mock_reply(message: str, system_prompt: str = None) -> str:

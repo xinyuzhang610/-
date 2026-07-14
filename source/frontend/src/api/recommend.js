@@ -1,3 +1,3 @@
-import axios from 'axios'
-const client = axios.create({ baseURL: '/api/recommend', timeout: 10000 })
+import { createApiClient } from './client'
+const client = createApiClient('/api/recommend')
 export const getRecommendation = (payload) => client.post('/', payload)
