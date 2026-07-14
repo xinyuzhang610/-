@@ -57,4 +57,15 @@ describe('Home.vue', () => {
     expect(warn.mock.calls.flat().join(' ')).not.toMatch(/router-link|No match found/i)
     warn.mockRestore()
   })
+
+  it('keeps the problem heading in two intentional semantic lines', async () => {
+    const wrapper = await mountHome()
+    const lines = wrapper.findAll('[data-testid="pain-heading-line"]')
+
+    expect(lines).toHaveLength(2)
+    expect(lines.map((line) => line.text())).toEqual([
+      '问题不在工具多少',
+      '而在知识尚未成路'
+    ])
+  })
 })
