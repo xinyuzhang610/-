@@ -15,7 +15,11 @@ const revealUnavailable = ref(false)
 
 <template>
   <section class="hero" :class="{ 'hero--still': animationSkipped }" data-narrative-section data-testid="hero-section">
-    <div class="hero__art" :class="{ 'hero__art--fallback': heroArtFailed }">
+    <div
+      class="hero__art"
+      data-reveal-target="generated-landscape"
+      :class="{ 'hero__art--fallback': heroArtFailed }"
+    >
       <img
         v-if="!heroArtFailed"
         data-testid="hero-background-image"
@@ -56,8 +60,8 @@ const revealUnavailable = ref(false)
 .hero { position: relative; min-height: max(46rem, 100svh); overflow: hidden; isolation: isolate; background: var(--ink-950); color: var(--moon-50); }
 .hero__art { position: absolute; z-index: 0; inset: 0; min-height: 46rem; }
 .hero__art--fallback { background: radial-gradient(circle at 76% 42%, rgb(66 185 154 / 18%), transparent 28%), linear-gradient(135deg, #07110e, #17271f); }
-.hero__art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgb(10 20 17 / 94%) 0%, rgb(10 20 17 / 70%) 43%, rgb(10 20 17 / 12%) 76%), linear-gradient(0deg, var(--ink-950), transparent 30%); }
-.hero__art > img { width: 100%; height: 100%; object-fit: cover; opacity: .72; }
+.hero__art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgb(5 15 12 / 90%) 0%, rgb(7 18 14 / 58%) 42%, rgb(7 18 14 / 8%) 72%), linear-gradient(0deg, rgb(5 14 11 / 72%), transparent 34%); }
+.hero__art > img { width: 100%; height: 100%; object-fit: cover; opacity: .96; filter: saturate(1.06) contrast(1.05) brightness(1.04); }
 .hero__ink { position: absolute; inset: auto 0 0; min-height: 36%; opacity: .2; mix-blend-mode: screen; }
 .hero__core { position: absolute; z-index: 1; top: 50%; right: clamp(-8rem, 3vw, 4rem); width: min(49vw, 42rem); transform: translateY(-50%); opacity: .75; }
 .hero__content { position: relative; z-index: 2; display: flex; min-height: max(46rem, 100svh); flex-direction: column; justify-content: center; align-items: flex-start; padding-block: 8rem 5rem; pointer-events: none; }

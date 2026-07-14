@@ -85,6 +85,22 @@ describe('Home.vue', () => {
     expect(wrapper.find('.hero__reveal-hint').exists()).toBe(false)
   })
 
+  it('keeps the generated landscape beneath the temporary reveal and content', async () => {
+    const wrapper = await mountHome()
+    const hero = wrapper.get('[data-testid="hero-section"]')
+    const children = [...hero.element.children]
+    const artIndex = children.findIndex((node) => node.classList.contains('hero__art'))
+    const revealIndex = children.findIndex((node) => (
+      node.matches('[data-testid="hero-scratch-reveal"]')
+    ))
+    const contentIndex = children.findIndex((node) => node.classList.contains('hero__content'))
+
+    expect(artIndex).toBeLessThan(revealIndex)
+    expect(revealIndex).toBeLessThan(contentIndex)
+    expect(hero.get('.hero__art').attributes('data-reveal-target')).toBe('generated-landscape')
+    expect(hero.get('[data-testid="hero-background-image"]').attributes('src')).toContain('hero-ink-landscape')
+  })
+
   it('keeps a clean hero surface when the background image cannot load', async () => {
     const wrapper = await mountHome()
     await wrapper.get('[data-testid="hero-background-image"]').trigger('error')
