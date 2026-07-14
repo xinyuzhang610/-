@@ -34,7 +34,8 @@ FastAPI + SQLAlchemy ─────► MySQL 8
 │   ├── design/            # 产品和交互设计规格
 │   ├── guides/            # 环境与技术栈指南
 │   ├── quality/           # QA 报告和截图
-│   └── archive/           # 历史计划与环境搭建记录
+│   └── archive/           # 历史计划、报告和已停用前端
+│       └── legacy-frontend/ # 不参与构建的早期页面快照
 ├── source/
 │   ├── frontend/          # 唯一正式 Vue 前端
 │   └── backend/           # FastAPI 后端
@@ -42,6 +43,8 @@ FastAPI + SQLAlchemy ─────► MySQL 8
 ├── SECURITY.md
 └── README.md
 ```
+
+`source/frontend` 与 `source/backend` 是仅有的正式应用代码入口。`docs/archive/legacy-frontend` 只用于历史追溯，不参与安装、路由、测试或生产构建。
 
 完整资料入口见 [文档中心](docs/README.md)。
 
