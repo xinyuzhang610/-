@@ -1,167 +1,29 @@
-<template>
-  <div class="tool-use">
-    <el-card class="tool-card" v-if="tool">
-      <template #header>
-        <div class="tool-header">
-          <span class="tool-icon">{{ tool.icon }}</span>
-          <span class="tool-name">{{ tool.name }}</span>
-        </div>
-      </template>
-
-      <div class="tool-description">
-        <p>{{ tool.description }}</p>
-      </div>
-
-      <div class="chat-section">
-        <div class="chat-messages" ref="messagesContainer">
-          <div v-for="(msg, index) in messages" :key="index" :class="['message', msg.role]">
-            <div class="message-content">{{ msg.content }}</div>
-          </div>
-        </div>
-
-        <div class="chat-input">
-          <el-input v-model="inputMessage" :placeholder="'输入内容开始使用...'" @keyup.enter="sendMessage">
-            <template #append>
-              <el-button @click="sendMessage" :loading="loading">发送</el-button>
-            </template>
-          </el-input>
-        </div>
-      </div>
-    </el-card>
-
-    <el-card v-else class="loading-card">
-      <el-skeleton :rows="5" animated />
-    </el-card>
-  </div>
-</template>
-
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
-import { getTool } from '@/api/tools'
-import { sendMessage as sendChatMessage } from '@/api/chat'
-import { ElMessage } from 'element-plus'
+import { computed, nextTick, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { getTool } from '../../api/tools'
+import { sendChat } from '../../api/chat'
+import StatusState from '../../components/ui/StatusState.vue'
+import { useDemoMode } from '../../composables/useDemoMode'
 
-const route = useRoute()
-const tool = ref(null)
-const messages = ref([])
-const inputMessage = ref('')
-const loading = ref(false)
-const messagesContainer = ref(null)
-
-onMounted(async () => {
-  const toolId = route.params.toolId
-  try {
-    const { data } = await getTool(toolId)
-    tool.value = data
-    messages.value.push({
-      role: 'assistant',
-      content: `你好！我是${data.name}，${data.description}。请输入内容开始使用。`
-    })
-  } catch (error) {
-    ElMessage.error('加载工具失败')
-  }
-})
-
-const sendMessage = async () => {
-  if (!inputMessage.value.trim() || loading.value || !tool.value) return
-
-  const userMessage = inputMessage.value
-  messages.value.push({ role: 'user', content: userMessage })
-  inputMessage.value = ''
-
-  await nextTick()
-  scrollToBottom()
-
-  loading.value = true
-  try {
-    const { data } = await sendChatMessage({
-      message: userMessage,
-      tool_id: tool.value.id
-    })
-    messages.value.push({ role: 'assistant', content: data.reply })
-  } catch (error) {
-    ElMessage.error('发送失败，请重试')
-    messages.value.pop()
-  } finally {
-    loading.value = false
-    await nextTick()
-    scrollToBottom()
-  }
-}
-
-const scrollToBottom = () => {
-  if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
-  }
-}
+const route = useRoute(), router = useRouter(), tool = ref(null), loadingTool = ref(true), toolError = ref('')
+const { enabled: demoEnabled, getDemoTool } = useDemoMode()
+const input = ref(''), pending = ref(false), error = ref(''), sessionId = ref(''), failedText = ref(''), feed = ref(null), messages = ref([])
+const toolId = computed(() => Number(route.params.id))
+async function loadTool() { loadingTool.value = true; toolError.value = ''; try { const data = demoEnabled.value ? getDemoTool(route.params.id) : (await getTool(route.params.id)).data; if (!data) throw new Error('工具不存在'); tool.value = data; messages.value = [{ id: 'welcome', role: 'assistant', content: `我是${data.name}。${data.description || '请告诉我你想解决的问题。'}` }] } catch (cause) { toolError.value = cause?.response?.data?.detail || cause.message || '工具详情读取失败。' } finally { loadingTool.value = false } }
+async function submit(text = input.value) { const question = text.trim(); if (!question || pending.value || !tool.value) return; pending.value = true; error.value = ''; failedText.value = question; try { const { data } = await sendChat({ message: question, tool_id: toolId.value, session_id: sessionId.value || undefined }); messages.value.push({ id: `u-${Date.now()}`, role: 'user', content: question }, { id: `a-${Date.now()}`, role: 'assistant', content: data.reply }); sessionId.value = data.session_id; input.value = ''; failedText.value = ''; await nextTick(); if (feed.value) feed.value.scrollTop = feed.value.scrollHeight } catch (cause) { error.value = cause?.response?.data?.detail || '请求失败，输入内容已为你保留。'; input.value = question } finally { pending.value = false } }
+async function share() { try { await navigator.clipboard.writeText(window.location.href) } catch { error.value = '复制失败，请从浏览器地址栏复制链接。' } }
+onMounted(loadTool)
 </script>
 
+<template>
+  <main class="tool-page"><StatusState v-if="loadingTool" type="loading" title="正在唤醒工具" /><StatusState v-else-if="toolError" type="error" title="工具无法打开" :description="toolError" @retry="loadTool" />
+    <template v-else-if="tool"><aside class="tool-context"><button class="back" type="button" @click="router.back()">← 返回</button><span class="tool-sigil" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="m24 4 17 10v20L24 44 7 34V14L24 4Z"/><path d="m7 14 17 11 17-11M24 25v19"/></svg></span><p>{{ tool.category || '通用工具' }}</p><h1>{{ tool.name }}</h1><strong>工具编号 {{ route.params.id }}</strong><div class="rule" /><p class="description">{{ tool.description || '工具创建者尚未补充说明。' }}</p><dl><div><dt>使用次数</dt><dd>{{ tool.usage_count || 0 }}</dd></div><div><dt>当前会话</dt><dd>{{ sessionId || '待建立' }}</dd></div></dl><button class="share" type="button" @click="share">复制分享链接</button></aside>
+      <section class="workspace" aria-labelledby="workspace-title"><header><div><p>GUIDED TOOL SESSION</p><h2 id="workspace-title">开始一次专注探索</h2></div><span :class="{ busy: pending }">{{ pending ? '生成中' : '已就绪' }}</span></header><div ref="feed" class="feed" aria-live="polite"><article v-for="message in messages" :key="message.id" :class="message.role"><b>{{ message.role === 'user' ? '你' : tool.name }}</b><p>{{ message.content }}</p></article><article v-if="pending" class="assistant"><b>{{ tool.name }}</b><p>正在组织回答…</p></article></div><div v-if="error" class="error" role="alert"><p>{{ error }}</p><button data-testid="retry-message" type="button" @click="submit(failedText)">重新发送</button></div><form @submit.prevent="submit()"><label for="tool-question">向{{ tool.name }}提问</label><textarea id="tool-question" v-model="input" rows="4" placeholder="写下你希望这个工具协助解决的内容" /><div><span>回答将使用当前工具的专属能力</span><button type="submit" :disabled="pending || !input.trim()">{{ pending ? '处理中' : '发送' }}</button></div></form></section>
+    </template>
+  </main>
+</template>
+
 <style scoped>
-.tool-use {
-  max-width: 800px;
-  margin: 0 auto;
-}
-.tool-card {
-  height: calc(100vh - 160px);
-  display: flex;
-  flex-direction: column;
-}
-.tool-header {
-  display: flex;
-  align-items: center;
-}
-.tool-icon {
-  font-size: 24px;
-  margin-right: 10px;
-}
-.tool-name {
-  font-size: 18px;
-  font-weight: bold;
-}
-.tool-description {
-  padding: 15px;
-  background: #f5f7fa;
-  border-radius: 8px;
-  margin-bottom: 15px;
-}
-.chat-section {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-.chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 15px;
-  background: #fafafa;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  max-height: 400px;
-}
-.message {
-  margin-bottom: 15px;
-  display: flex;
-}
-.message.user {
-  justify-content: flex-end;
-}
-.message-content {
-  max-width: 70%;
-  padding: 12px 16px;
-  border-radius: 12px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-}
-.message.assistant .message-content {
-  background: #fff;
-  border: 1px solid #eee;
-}
-.message.user .message-content {
-  background: #409eff;
-  color: #fff;
-}
-.chat-input {
-  padding: 15px 0;
-}
+.tool-page{display:grid;min-height:100vh;grid-template-columns:minmax(280px,.72fr) minmax(0,1.65fr);background:#0e1815;color:var(--moon-50)}.tool-context{position:relative;padding:clamp(28px,4vw,58px);border-right:1px solid rgb(203 211 201 / 14%);background:radial-gradient(circle at 35% 18%,rgb(213 166 79 / 18%),transparent 28%),linear-gradient(160deg,#162720,#0c1412)}button{font:inherit;cursor:pointer}.back,.share{min-height:44px;border:1px solid rgb(203 211 201 / 22%);border-radius:11px;background:transparent;color:var(--moon-300)}.back{padding:0 14px}.tool-sigil{display:grid;width:88px;height:88px;place-items:center;margin:clamp(54px,9vw,120px) 0 22px;border:1px solid var(--gold-400);border-radius:26px;color:var(--gold-300);box-shadow:0 0 54px rgb(213 166 79 / 18%)}.tool-sigil svg{width:50px;fill:none;stroke:currentColor;stroke-width:1.2}.tool-context>p:not(.description){color:var(--jade-200);font-size:.72rem;letter-spacing:.16em}.tool-context h1{margin:12px 0 8px;font:500 clamp(2.1rem,4vw,4rem)/1.1 var(--font-display)}.tool-context>strong{color:var(--gold-300);font-size:.75rem}.rule{height:1px;margin:28px 0;background:linear-gradient(90deg,var(--gold-400),transparent)}.description{color:var(--moon-300);line-height:1.8}.tool-context dl{margin:32px 0}.tool-context dl div{display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid rgb(255 255 255 / 10%)}dt{color:var(--ink-300)}dd{margin:0}.share{width:100%}.workspace{display:flex;min-width:0;flex-direction:column;padding:clamp(24px,4vw,54px)}.workspace>header{display:flex;align-items:center;justify-content:space-between;padding-bottom:22px;border-bottom:1px solid rgb(255 255 255 / 10%)}.workspace header p{color:var(--gold-300);font-size:.66rem;letter-spacing:.18em}.workspace h2{margin-top:7px;font:500 1.7rem var(--font-heading)}.workspace header>span{padding:7px 12px;border-radius:99px;background:rgb(66 185 154 / 12%);color:var(--jade-200);font-size:.72rem}.feed{display:flex;min-height:320px;flex:1;flex-direction:column;gap:22px;overflow-y:auto;padding:34px 0}.feed article{max-width:80%}.feed article b{display:block;margin-bottom:7px;color:var(--jade-200);font-size:.72rem}.feed article p{padding:15px 18px;border:1px solid rgb(203 211 201 / 12%);border-radius:4px 18px 18px;background:rgb(255 255 255 / 5%);line-height:1.75;white-space:pre-wrap}.feed .user{align-self:flex-end}.feed .user b{text-align:right}.feed .user p{border-radius:18px 4px 18px 18px;background:rgb(23 107 90 / 38%)}.error{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:12px;border:1px solid rgb(189 69 59 / 48%);border-radius:12px;color:#ffd1cc}.error button{min-height:40px;padding:0 13px;border:1px solid currentColor;border-radius:9px;background:transparent;color:inherit}.workspace form{padding:18px;border:1px solid rgb(213 166 79 / 28%);border-radius:20px;background:rgb(0 0 0 / 14%)}.workspace form label{display:block;color:var(--moon-300);font-size:.75rem}.workspace textarea{width:100%;margin:10px 0;resize:none;border:0;background:transparent;color:var(--moon-50);font:inherit;line-height:1.6;outline:0}.workspace form>div{display:flex;align-items:center;justify-content:space-between}.workspace form span{color:var(--ink-300);font-size:.7rem}.workspace form button{min-height:44px;padding:0 24px;border:0;border-radius:11px;background:var(--gold-400);color:var(--ink-950);font-weight:700}.workspace form button:disabled{opacity:.45;cursor:not-allowed}@media(max-width:820px){.tool-page{grid-template-columns:1fr}.tool-context{border-right:0;border-bottom:1px solid rgb(203 211 201 / 14%)}.tool-sigil{margin:40px 0 18px}.feed{min-height:380px}}@media(max-width:520px){.workspace,.tool-context{padding:22px 16px}.workspace form>div,.error{align-items:flex-start;flex-direction:column;gap:10px}.feed article{max-width:95%}}
 </style>

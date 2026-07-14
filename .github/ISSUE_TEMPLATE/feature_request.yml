@@ -1,0 +1,69 @@
+name: 功能建议
+description: 提议具有明确用户价值和验收标准的改进
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: dropdown
+    id: audience
+    attributes:
+      label: 目标用户
+      options:
+        - 教师
+        - 学生
+        - 项目维护者
+        - 多类用户
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 用户问题与价值
+      description: 描述当前场景、困难，以及解决后能带来的可观察价值。
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: 建议范围
+      description: 说明入口、主要流程、数据来源和需要改变的行为。
+    validations:
+      required: true
+
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: 非目标
+      description: 明确本建议不准备解决的相邻问题，避免范围持续扩大。
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+      description: 使用可验证的条件逐条描述完成状态。
+      placeholder: |
+        - [ ] 当……时，用户可以……
+        - [ ] 在桌面端和移动端均……
+        - [ ] 自动化测试覆盖……
+    validations:
+      required: true
+
+  - type: textarea
+    id: constraints
+    attributes:
+      label: 约束与风险
+      description: 补充隐私、可访问性、性能、数据库、AI 能力边界或竞赛要求。
+
+  - type: checkboxes
+    id: boundary
+    attributes:
+      label: 项目边界确认
+      options:
+        - label: 建议不要求在本应用内创建师大平台负责的智能体工作流。
+          required: true
+        - label: 建议不把密钥、个人信息或生产数据公开到 Issue。
+          required: true

@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     
     # DeepSeek API配置
     DEEPSEEK_API_KEY: str = ""
-    DEEPSEEK_MODEL: str = "deepseek-chat"
+    DEEPSEEK_MODEL: str = "dsv4"
     DEEPSEEK_API_URL: str = "https://api.deepseek.com"
     
     # CORS配置

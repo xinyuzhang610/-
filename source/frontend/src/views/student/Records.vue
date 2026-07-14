@@ -1,132 +1,30 @@
-<template>
-  <div class="records">
-    <h2>我的学习记录</h2>
-
-    <div class="stats-cards">
-      <el-card class="stat-card">
-        <div class="stat-value">{{ stats.total_usage }}</div>
-        <div class="stat-label">使用次数</div>
-      </el-card>
-      <el-card class="stat-card">
-        <div class="stat-value">{{ stats.unique_tools }}</div>
-        <div class="stat-label">使用工具数</div>
-      </el-card>
-      <el-card class="stat-card">
-        <div class="stat-value">{{ stats.streak_days }}</div>
-        <div class="stat-label">连续天数</div>
-      </el-card>
-    </div>
-
-    <el-card class="recent-card">
-      <template #header>
-        <span>最近使用</span>
-      </template>
-      <div class="recent-list">
-        <div v-for="record in records" :key="record.id" class="record-item">
-          <div class="record-time">{{ formatDate(record.created_at) }}</div>
-          <div class="record-content">
-            <span class="record-tool">工具ID: {{ record.tool_id }}</span>
-            <span class="record-input">{{ record.input_text }}</span>
-          </div>
-        </div>
-      </div>
-      <el-empty v-if="records.length === 0" description="还没有使用记录" />
-    </el-card>
-  </div>
-</template>
-
 <script setup>
-import { ref, onMounted } from 'vue'
-import { getMyUsage } from '@/api/usage'
-import { ElMessage } from 'element-plus'
+import { computed, onMounted, ref } from 'vue'
+import { getMyUsage } from '../../api/usage'
+import StatusState from '../../components/ui/StatusState.vue'
+import { useDemoMode } from '../../composables/useDemoMode'
 
-const records = ref([])
-const stats = ref({
-  total_usage: 0,
-  unique_tools: 0,
-  streak_days: 0
-})
-
-onMounted(async () => {
-  await loadRecords()
-})
-
-const loadRecords = async () => {
-  try {
-    const user = JSON.parse(localStorage.getItem('user') || '{}')
-    if (!user.id) {
-      ElMessage.warning('请先登录')
-      return
-    }
-    const { data } = await getMyUsage(user.id)
-    records.value = data
-    stats.value.total_usage = data.length
-    const uniqueToolIds = new Set(data.map(r => r.tool_id))
-    stats.value.unique_tools = uniqueToolIds.size
-    const dates = [...new Set(data.map(r => new Date(r.created_at).toDateString()))]
-    stats.value.streak_days = dates.length
-  } catch (error) {
-    ElMessage.error('加载记录失败')
-  }
-}
-
-const formatDate = (dateStr) => {
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diff = now - date
-  if (diff < 60000) return '刚刚'
-  if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前'
-  if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前'
-  return date.toLocaleDateString('zh-CN')
-}
+const logs = ref([]), loading = ref(true), error = ref('')
+const userId = localStorage.getItem('user_id') || '1'
+const { enabled: demoEnabled, getDemoData } = useDemoMode()
+const uniqueTools = computed(() => new Set(logs.value.map(item => item.tool_id)).size)
+const activeDays = computed(() => new Set(logs.value.map(item => item.created_at?.slice(0, 10)).filter(Boolean)).size)
+const formatTime = value => value ? new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : '时间未知'
+async function load() { loading.value = true; error.value = ''; try { if (demoEnabled.value) { logs.value = getDemoData('studentHistory'); return } const { data } = await getMyUsage(userId); logs.value = Array.isArray(data) ? data : [] } catch (cause) { error.value = cause?.response?.data?.detail || '学习记录暂时无法读取。' } finally { loading.value = false } }
+onMounted(load)
 </script>
 
+<template>
+  <main class="records-page"><header><p>LEARNING CONSTELLATION</p><h1>学习轨迹</h1><span>这里仅呈现真实记录，不会补造尚未发生的学习数据。</span></header>
+    <StatusState v-if="loading" type="loading" title="正在汇集学习轨迹" />
+    <StatusState v-else-if="error" type="error" title="轨迹读取失败" :description="error" @retry="load" />
+    <template v-else><section class="metrics" aria-label="学习记录指标"><article aria-label="使用次数"><span>使用次数</span><strong>{{ logs.length }}</strong></article><article aria-label="使用工具数"><span>使用工具数</span><strong>{{ uniqueTools }}</strong></article><article aria-label="活跃学习日"><span>活跃学习日</span><strong>{{ activeDays }}</strong></article></section>
+      <StatusState v-if="!logs.length" title="还没有学习记录" description="第一次使用工具后，真实轨迹会出现在这里。" />
+      <section v-else class="timeline" aria-labelledby="timeline-title"><h2 id="timeline-title">最近学习片段</h2><ol><li v-for="log in logs" :key="log.id"><time :datetime="log.created_at">{{ formatTime(log.created_at) }}</time><div><span>工具 #{{ log.tool_id }}</span><h3>{{ log.input_text || '未记录输入内容' }}</h3><p v-if="log.output_text">{{ log.output_text }}</p></div></li></ol></section>
+    </template>
+  </main>
+</template>
+
 <style scoped>
-.records {
-  max-width: 800px;
-  margin: 0 auto;
-}
-.stats-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin-bottom: 20px;
-}
-.stat-card {
-  text-align: center;
-}
-.stat-value {
-  font-size: 36px;
-  font-weight: bold;
-  color: #409eff;
-}
-.stat-label {
-  color: #666;
-  margin-top: 10px;
-}
-.recent-card {
-  margin-bottom: 20px;
-}
-.record-item {
-  display: flex;
-  padding: 15px 0;
-  border-bottom: 1px solid #eee;
-}
-.record-time {
-  width: 100px;
-  color: #666;
-  font-size: 14px;
-}
-.record-content {
-  flex: 1;
-}
-.record-tool {
-  display: block;
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-.record-input {
-  color: #666;
-  font-size: 14px;
-}
+.records-page{min-height:100%;padding:clamp(28px,5vw,64px);background:linear-gradient(160deg,#101916,#182923);color:var(--moon-50)}header p{color:var(--gold-300);font-size:.7rem;letter-spacing:.22em}header h1{margin:12px 0;font:500 clamp(2.4rem,5vw,4.5rem) var(--font-display)}header span{color:var(--moon-300)}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:38px 0}.metrics article{padding:24px;border:1px solid rgb(203 211 201 / 16%);border-radius:20px;background:rgb(255 255 255 / 4%)}.metrics span,.metrics strong{display:block}.metrics span{color:var(--moon-300);font-size:.78rem}.metrics strong{margin-top:8px;color:var(--gold-300);font:500 2.7rem var(--font-display)}.timeline{max-width:920px;padding:clamp(22px,4vw,42px);border:1px solid rgb(203 211 201 / 16%);border-radius:28px;background:rgb(255 255 255 / 4%)}.timeline h2{margin-bottom:28px;font:500 1.7rem var(--font-heading)}.timeline ol{list-style:none}.timeline li{display:grid;grid-template-columns:150px 1fr;gap:24px;padding:22px 0;border-top:1px solid rgb(255 255 255 / 10%)}.timeline time{color:var(--ink-300);font-size:.76rem}.timeline li span{color:var(--jade-200);font-size:.72rem}.timeline h3{margin:5px 0;font:500 1rem var(--font-heading)}.timeline li p{display:-webkit-box;overflow:hidden;color:var(--moon-300);line-height:1.6;-webkit-box-orient:vertical;-webkit-line-clamp:2}@media(max-width:640px){.records-page{padding:24px 16px}.metrics{grid-template-columns:1fr}.timeline li{grid-template-columns:1fr;gap:8px}}
 </style>

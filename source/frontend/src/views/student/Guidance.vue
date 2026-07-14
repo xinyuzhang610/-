@@ -1,275 +1,58 @@
-<template>
-  <div class="guidance-container">
-    <el-card class="guidance-card">
-      <h2>探索你的学习需求</h2>
-      <p class="subtitle">让我帮你找到最适合的学习工具</p>
-
-      <el-steps :active="currentStep" finish-status="success" align-center>
-        <el-step title="选择学科" />
-        <el-step title="明确目标" />
-        <el-step title="获取推荐" />
-      </el-steps>
-
-      <div v-if="currentStep === 0" class="step-content">
-        <h3>{{ guidanceData.message }}</h3>
-        <div class="options-grid">
-          <el-card
-            v-for="option in guidanceData.options"
-            :key="option.value"
-            class="option-card"
-            :class="{ active: selectedCategory === option.value }"
-            @click="selectCategory(option.value)"
-          >
-            <div class="option-icon">{{ option.value === '文科' ? '📚' : '🔬' }}</div>
-            <div class="option-label">{{ option.label }}</div>
-            <div class="option-desc">{{ option.desc }}</div>
-          </el-card>
-        </div>
-      </div>
-
-      <div v-if="currentStep === 1" class="step-content">
-        <h3>{{ guidanceData.message }}</h3>
-        <div class="options-list">
-          <el-radio-group v-model="selectedGoal" @change="handleGoalSelect">
-            <el-radio
-              v-for="option in guidanceData.options"
-              :key="option.value"
-              :value="option.value"
-              class="goal-option"
-            >
-              <span class="goal-label">{{ option.label }}</span>
-              <span class="goal-desc">{{ option.desc }}</span>
-            </el-radio>
-          </el-radio-group>
-        </div>
-      </div>
-
-      <div v-if="currentStep === 2" class="step-content">
-        <h3>{{ guidanceData.message }}</h3>
-        <div class="tools-grid">
-          <el-card v-for="tool in guidanceData.tools" :key="tool.id" class="tool-card">
-            <div class="tool-icon">{{ tool.icon }}</div>
-            <div class="tool-name">{{ tool.name }}</div>
-            <div class="tool-desc">{{ tool.description }}</div>
-            <div class="tool-subject">{{ tool.subject }}</div>
-            <el-button type="primary" size="small" @click="useTool(tool)">立即体验</el-button>
-          </el-card>
-        </div>
-        <div class="action-buttons">
-          <el-button @click="resetGuidance">重新选择</el-button>
-          <el-button type="primary" @click="goToPlaza">去工具广场看看</el-button>
-        </div>
-      </div>
-
-      <div class="nav-buttons" v-if="currentStep < 2">
-        <el-button v-if="currentStep > 0" @click="prevStep">上一步</el-button>
-        <el-button type="primary" @click="nextStep" :disabled="!canProceed">下一步</el-button>
-      </div>
-    </el-card>
-  </div>
-</template>
-
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { getRecommendation } from '@/api/recommend'
-import { ElMessage } from 'element-plus'
+import { computed, ref } from 'vue'
+import InterestBubble from '../../components/student/InterestBubble.vue'
 
-const router = useRouter()
-const currentStep = ref(0)
-const selectedCategory = ref('')
-const selectedGoal = ref('')
-const guidanceData = ref({ message: '', options: [] })
-const canProceed = ref(false)
-
-const STUDENT_GUIDANCE = {
-  1: {
-    message: '你想学习哪个方向？',
-    options: [
-      { value: '文科', label: '文科', desc: '语文/英语/历史/政治/地理' },
-      { value: '理科', label: '理科', desc: '数学/物理/化学/生物/信息技术' }
-    ]
-  },
-  2: {
-    '文科': {
-      message: '你最想做什么？',
-      options: [
-        { value: '学习新知识', label: '学习新知识', desc: '理解概念、背诵诗词、学习语法' },
-        { value: '完成作业', label: '完成作业', desc: '写作文、做阅读、翻译句子' },
-        { value: '准备考试', label: '准备考试', desc: '复习重点、练习题目、查漏补缺' },
-        { value: '探索兴趣', label: '探索兴趣', desc: '玩飞花令、趣味学习、拓展视野' }
-      ]
-    },
-    '理科': {
-      message: '你最想做什么？',
-      options: [
-        { value: '学习新知识', label: '学习新知识', desc: '理解公式、学习概念、掌握方法' },
-        { value: '完成作业', label: '完成作业', desc: '解题思路、分析错题、推导公式' },
-        { value: '准备考试', label: '准备考试', desc: '复习重点、练习题目、总结技巧' },
-        { value: '探索兴趣', label: '探索兴趣', desc: '逻辑训练、实验模拟、数据分析' }
-      ]
-    }
-  }
+const layers = [
+  { title: '此刻，哪一种阻力最明显？', note: '先辨认学习阻力', options: ['读不懂题', '找不到思路', '难以专注'] },
+  { title: '它出现在哪片知识星域？', note: '再定位学科领域', options: ['语文', '数学', '英语', '物理', '化学', '历史'] },
+  { title: '你希望怎样突破？', note: '最后选择学习方式', options: ['概念辨析', '分步推导', '案例启发', '练习巩固'] }
+]
+const selections = ref(['', '', ''])
+const current = ref(0)
+const choose = (value) => {
+  selections.value[current.value] = value
 }
-
-onMounted(() => {
-  guidanceData.value = STUDENT_GUIDANCE[1]
-})
-
-const selectCategory = (value) => {
-  selectedCategory.value = value
-  canProceed.value = true
-}
-
-const nextStep = async () => {
-  if (currentStep.value === 0) {
-    guidanceData.value = STUDENT_GUIDANCE[2][selectedCategory.value]
-    currentStep.value++
-    canProceed.value = false
-  } else if (currentStep.value === 1) {
-    try {
-      const { data } = await getRecommendation({
-        step: 3,
-        category: selectedCategory.value,
-        need_type: selectedGoal.value
-      })
-      guidanceData.value = data
-      currentStep.value++
-    } catch (error) {
-      ElMessage.error('获取推荐失败')
-    }
-  }
-}
-
-const prevStep = () => {
-  currentStep.value--
-  if (currentStep.value === 0) {
-    guidanceData.value = STUDENT_GUIDANCE[1]
-    canProceed.value = true
-  }
-}
-
-const handleGoalSelect = () => {
-  canProceed.value = true
-}
-
-const useTool = (tool) => {
-  router.push(`/student/tool/${tool.id}`)
-}
-
-const resetGuidance = () => {
-  currentStep.value = 0
-  selectedCategory.value = ''
-  selectedGoal.value = ''
-  guidanceData.value = STUDENT_GUIDANCE[1]
-  canProceed.value = false
-}
-
-const goToPlaza = () => {
-  router.push('/student/plaza')
-}
+const progress = computed(() => `第 ${current.value + 1} 层，共 3 层`)
+const recommendationQuery = computed(() => ({ difficulty: selections.value[0], subject: selections.value[1], approach: selections.value[2] }))
 </script>
 
+<template>
+  <main class="guidance-page">
+    <div class="starfield" aria-hidden="true" />
+    <header>
+      <p class="eyebrow">STUDENT · KNOWLEDGE ORBIT</p>
+      <h1>找到属于你的知识入口</h1>
+      <p>用三次选择，把模糊的困惑变成一条可以行动的学习路径。</p>
+    </header>
+
+    <ol class="layer-map" aria-label="兴趣引导三层路径">
+      <li v-for="(layer, index) in layers" :key="layer.title" data-interest-layer :class="{ active: current === index, done: selections[index] }">
+        <button type="button" :aria-label="`前往第 ${index + 1} 层：${layer.note}`" :disabled="index > 0 && !selections[index - 1]" @click="current = index">
+          <span>0{{ index + 1 }}</span>{{ layer.note }}
+        </button>
+      </li>
+    </ol>
+
+    <section class="orbit-panel" :aria-labelledby="`layer-title-${current}`">
+      <div class="progress-row"><span role="status" aria-live="polite">{{ progress }}</span><span>{{ selections.filter(Boolean).length * 33 + (selections[2] ? 1 : 0) }}%</span></div>
+      <div class="progress-track"><i :style="{ width: `${selections.filter(Boolean).length * 33 + (selections[2] ? 1 : 0)}%` }" /></div>
+      <p class="layer-kicker">LAYER 0{{ current + 1 }}</p>
+      <h2 :id="`layer-title-${current}`">{{ layers[current].title }}</h2>
+      <div class="bubble-grid">
+        <InterestBubble v-for="(option, index) in layers[current].options" :key="option" :label="option" :index="index" :selected="selections[current] === option" @select="choose(option)" />
+      </div>
+      <button v-if="current < 2" class="next-layer" type="button" :disabled="!selections[current]" @click="current += 1">进入下一层 →</button>
+    </section>
+
+    <aside class="selection-trail" aria-label="已选择的学习线索">
+      <div v-for="(layer, index) in layers" :key="layer.note"><span>{{ layer.note }}</span><strong>{{ selections[index] || '待选择' }}</strong></div>
+      <RouterLink v-if="selections.every(Boolean)" :to="{ path: '/student/plaza', query: recommendationQuery }">带着线索探索工具广场 →</RouterLink>
+    </aside>
+  </main>
+</template>
+
 <style scoped>
-.guidance-container {
-  max-width: 800px;
-  margin: 0 auto;
-}
-.guidance-card {
-  padding: 20px;
-}
-.subtitle {
-  color: #666;
-  text-align: center;
-  margin-bottom: 30px;
-}
-.step-content {
-  margin-top: 30px;
-}
-.options-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  margin-top: 20px;
-}
-.option-card {
-  cursor: pointer;
-  text-align: center;
-  transition: all 0.3s;
-}
-.option-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-.option-card.active {
-  border-color: #409eff;
-  background-color: #ecf5ff;
-}
-.option-icon {
-  font-size: 48px;
-  margin-bottom: 10px;
-}
-.option-label {
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-.option-desc {
-  color: #666;
-  font-size: 14px;
-}
-.goal-option {
-  display: block;
-  margin: 15px 0;
-  padding: 15px;
-  border: 1px solid #eee;
-  border-radius: 8px;
-}
-.goal-label {
-  font-weight: bold;
-  display: block;
-  margin-bottom: 5px;
-}
-.goal-desc {
-  color: #666;
-  font-size: 14px;
-}
-.tools-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
-  margin-top: 20px;
-}
-.tool-card {
-  text-align: center;
-}
-.tool-icon {
-  font-size: 36px;
-  margin-bottom: 10px;
-}
-.tool-name {
-  font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-.tool-desc {
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 10px;
-}
-.tool-subject {
-  color: #999;
-  font-size: 12px;
-  margin-bottom: 15px;
-}
-.action-buttons {
-  text-align: center;
-  margin-top: 30px;
-}
-.nav-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-top: 30px;
-}
+.guidance-page{position:relative;min-height:100%;overflow:hidden;padding:clamp(28px,5vw,72px);background:radial-gradient(circle at 70% 22%,rgb(23 107 90 / 28%),transparent 32%),linear-gradient(145deg,#0c1512,#15241f 58%,#111b18);color:var(--moon-50)}.starfield{position:absolute;inset:0;opacity:.22;background-image:radial-gradient(circle,var(--gold-300) 1px,transparent 1px);background-size:47px 47px;mask-image:linear-gradient(to bottom,#000,transparent 80%)}header,.layer-map,.orbit-panel,.selection-trail{position:relative;z-index:1}header{max-width:800px}.eyebrow,.layer-kicker{color:var(--gold-300);font-size:.72rem;letter-spacing:.22em}h1{max-width:720px;margin:12px 0;font:500 clamp(2.2rem,5vw,4.7rem)/1.08 var(--font-display)}header>p:last-child{max-width:620px;color:var(--moon-300);line-height:1.8}.layer-map{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:760px;margin:40px 0 26px;list-style:none}.layer-map button{width:100%;min-height:58px;padding:10px;border:1px solid rgb(203 211 201 / 18%);border-radius:14px;background:rgb(255 255 255 / 4%);color:var(--ink-300);text-align:left;cursor:pointer}.layer-map button span{display:block;color:var(--gold-300);font-size:.7rem}.layer-map .active button,.layer-map .done button{border-color:var(--jade-400);color:var(--moon-50)}.orbit-panel{max-width:960px;padding:clamp(24px,4vw,48px);border:1px solid rgb(213 166 79 / 25%);border-radius:32px;background:rgb(5 14 11 / 58%);box-shadow:0 30px 90px rgb(0 0 0 / 28%);backdrop-filter:blur(18px)}.progress-row{display:flex;justify-content:space-between;color:var(--moon-300);font-size:.78rem}.progress-track{height:2px;margin:10px 0 36px;background:rgb(255 255 255 / 10%)}.progress-track i{display:block;height:100%;background:linear-gradient(90deg,var(--jade-400),var(--gold-400));transition:width .4s}.orbit-panel h2{margin:8px 0 32px;font:500 clamp(1.6rem,3vw,2.5rem) var(--font-heading)}.bubble-grid{display:flex;flex-wrap:wrap;gap:clamp(14px,3vw,30px)}.selection-trail{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:960px;margin-top:20px}.selection-trail div{padding:15px;border-bottom:1px solid rgb(255 255 255 / 14%)}.selection-trail span,.selection-trail strong{display:block}.selection-trail span{color:var(--ink-300);font-size:.72rem}.selection-trail strong{margin-top:5px}.selection-trail a{grid-column:1/-1;justify-self:end;color:var(--gold-300)}
+@media(max-width:700px){.guidance-page{padding:24px 18px}.layer-map{grid-template-columns:1fr}.bubble-grid{justify-content:center}.selection-trail{grid-template-columns:1fr}.selection-trail a{justify-self:start}}@media(prefers-reduced-motion:reduce){.progress-track i{transition:none}}
+.next-layer{display:block;min-height:46px;margin:32px 0 0 auto;padding:0 22px;border:0;border-radius:12px;background:var(--gold-400);color:var(--ink-950);font-weight:700;cursor:pointer}.next-layer:disabled{opacity:.4;cursor:not-allowed}
 </style>

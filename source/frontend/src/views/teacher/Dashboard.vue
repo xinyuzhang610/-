@@ -1,167 +1,29 @@
 <template>
-  <div class="dashboard">
-    <h2>数据看板</h2>
-
-    <div class="stats-cards">
-      <el-card class="stat-card">
-        <div class="stat-value">{{ stats.total_tools }}</div>
-        <div class="stat-label">工具总数</div>
-      </el-card>
-      <el-card class="stat-card">
-        <div class="stat-value">{{ stats.total_users }}</div>
-        <div class="stat-label">学生人数</div>
-      </el-card>
-      <el-card class="stat-card">
-        <div class="stat-value">{{ stats.today_usage }}</div>
-        <div class="stat-label">今日使用</div>
-      </el-card>
-    </div>
-
-    <el-card class="trend-card">
-      <template #header>
-        <span>本周使用趋势</span>
-      </template>
-      <div class="trend-chart">
-        <div v-for="item in stats.weekly_trend" :key="item.date" class="trend-bar">
-          <div class="bar" :style="{ height: getBarHeight(item.count) + 'px' }"></div>
-          <div class="date">{{ item.date }}</div>
-          <div class="count">{{ item.count }}</div>
-        </div>
-      </div>
-    </el-card>
-
-    <el-card class="ranking-card">
-      <template #header>
-        <span>热门工具排行</span>
-      </template>
-      <div class="ranking-list">
-        <div v-for="(tool, index) in stats.top_tools" :key="tool.name" class="ranking-item">
-          <span class="rank">{{ index + 1 }}</span>
-          <span class="name">{{ tool.name }}</span>
-          <span class="count">{{ tool.count }}次</span>
-        </div>
-      </div>
-    </el-card>
+  <div class="dashboard-page"><header><span>LEARNING SIGNALS</span><h1>数据洞察</h1><p>从真实使用记录中，看见工具如何进入课堂。</p></header>
+    <StatusState v-if="loading" type="loading" title="正在汇聚课堂信号" />
+    <StatusState v-else-if="errorMessage" type="error" title="数据暂时不可用" :description="errorMessage" @retry="loadDashboard" />
+    <StatusState v-else-if="!dashboard" type="empty" title="还没有使用数据" description="学生开始使用工具后，趋势与记录会在这里出现。" />
+    <template v-else><section class="metrics" aria-label="关键指标"><MetricCard label="工具总数" :value="dashboard.total_tools" trend="已接入工具库"/><MetricCard label="用户总数" :value="dashboard.total_users" tone="gold" trend="教师与学生"/><MetricCard label="今日使用" :value="dashboard.today_usage" trend="实时累计"/></section>
+      <section class="dashboard-grid"><article class="panel trend-panel"><h2>七日使用趋势</h2><div class="bars" role="img" aria-label="七日使用趋势柱状图"><div v-for="item in dashboard.weekly_trend" :key="item.date" class="bar-item"><span class="bar-value">{{ item.count }}</span><div class="bar"><i :style="{height:barHeight(item.count)}"></i></div><small>{{ item.date }}</small></div></div></article>
+      <article class="panel"><h2>热门工具</h2><ol class="ranking"><li v-for="(tool,index) in dashboard.top_tools" :key="tool.name"><span>{{ String(index+1).padStart(2,'0') }}</span><strong>{{ tool.name }}</strong><small>{{ tool.count }} 次</small></li></ol></article></section>
+      <section class="panel records"><h2>最近使用记录</h2><div v-if="dashboard.recent_logs?.length" class="record-list"><div v-for="log in dashboard.recent_logs" :key="log.id"><span>{{ log.user_name || `用户 ${log.user_id || '-'}` }}</span><strong>{{ log.tool_name || `工具 ${log.tool_id || '-'}` }}</strong><time>{{ formatTime(log.created_at) }}</time></div></div><p v-else class="empty-copy">暂无最近记录。</p></section>
+    </template>
   </div>
 </template>
-
 <script setup>
-import { ref, onMounted } from 'vue'
-import { getDashboard } from '@/api/usage'
-import { ElMessage } from 'element-plus'
-
-const stats = ref({
-  total_tools: 0,
-  total_users: 0,
-  today_usage: 0,
-  weekly_trend: [],
-  top_tools: [],
-  recent_logs: []
-})
-
-onMounted(async () => {
-  await loadDashboard()
-})
-
-const loadDashboard = async () => {
-  try {
-    const { data } = await getDashboard()
-    stats.value = data
-  } catch (error) {
-    ElMessage.error('加载数据看板失败')
-  }
-}
-
-const getBarHeight = (count) => {
-  const maxCount = Math.max(...stats.value.weekly_trend.map(i => i.count), 1)
-  return (count / maxCount) * 100
-}
+import { computed, onMounted, ref } from 'vue'
+import MetricCard from '../../components/data/MetricCard.vue'
+import StatusState from '../../components/ui/StatusState.vue'
+import { getDashboard } from '../../api/usage'
+import { useDemoMode } from '../../composables/useDemoMode'
+const dashboard=ref(null),loading=ref(true),errorMessage=ref('')
+const {enabled:demoEnabled,getDemoData}=useDemoMode()
+const maxCount=computed(()=>Math.max(1,...(dashboard.value?.weekly_trend||[]).map(i=>i.count)))
+const barHeight=count=>`${Math.max(5,(count/maxCount.value)*100)}%`
+const formatTime=value=>value?new Intl.DateTimeFormat('zh-CN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(value)):'时间未知'
+async function loadDashboard(){loading.value=true;errorMessage.value='';try{if(demoEnabled.value){dashboard.value=getDemoData('dashboard');return}const {data}=await getDashboard();dashboard.value=data}catch(e){dashboard.value=null;errorMessage.value=e.response?.data?.detail||'无法连接统计服务，请确认后端已启动。'}finally{loading.value=false}}
+onMounted(loadDashboard)
 </script>
-
 <style scoped>
-.dashboard {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-.stats-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin-bottom: 20px;
-}
-.stat-card {
-  text-align: center;
-}
-.stat-value {
-  font-size: 36px;
-  font-weight: bold;
-  color: #409eff;
-}
-.stat-label {
-  color: #666;
-  margin-top: 10px;
-}
-.trend-card, .ranking-card {
-  margin-bottom: 20px;
-}
-.trend-chart {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-around;
-  height: 150px;
-  padding: 20px 0;
-}
-.trend-bar {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.bar {
-  width: 40px;
-  background: linear-gradient(180deg, #409eff, #66b1ff);
-  border-radius: 4px 4px 0 0;
-  min-height: 5px;
-}
-.date {
-  margin-top: 10px;
-  font-size: 12px;
-  color: #666;
-}
-.count {
-  font-size: 12px;
-  color: #409eff;
-}
-.ranking-item {
-  display: flex;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid #eee;
-}
-.rank {
-  width: 30px;
-  height: 30px;
-  background: #409eff;
-  color: #fff;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 15px;
-  font-weight: bold;
-}
-.ranking-item:nth-child(1) .rank {
-  background: #f56c6c;
-}
-.ranking-item:nth-child(2) .rank {
-  background: #e6a23c;
-}
-.ranking-item:nth-child(3) .rank {
-  background: #67c23a;
-}
-.name {
-  flex: 1;
-}
-.count {
-  color: #666;
-}
+.dashboard-page{max-width:1240px;margin:auto}.dashboard-page>header{margin-bottom:34px}.dashboard-page header>span{color:var(--gold-300);font-size:.68rem;letter-spacing:.23em}.dashboard-page h1{margin:8px 0;font-family:var(--font-display);font-size:clamp(2.4rem,5vw,4.7rem);font-weight:500}.dashboard-page header p{color:var(--moon-300)}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.dashboard-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-top:16px}.panel{padding:24px;border:1px solid var(--color-border);border-radius:var(--radius-xl);background:var(--material-panel-dark)}.panel h2{margin:0 0 22px;font-family:var(--font-display);font-size:1.5rem}.bars{display:flex;align-items:flex-end;gap:12px;height:260px}.bar-item{display:grid;grid-template-rows:20px 1fr 24px;align-items:end;flex:1;height:100%;text-align:center}.bar-value,.bar-item small{color:var(--moon-300);font-size:.72rem}.bar{position:relative;height:100%;border-bottom:1px solid var(--color-border)}.bar i{position:absolute;bottom:0;left:20%;width:60%;border-radius:6px 6px 0 0;background:linear-gradient(var(--jade-400),var(--jade-700));box-shadow:0 0 18px var(--effect-jade-soft)}.ranking{display:grid;gap:4px;padding:0;list-style:none}.ranking li{display:grid;grid-template-columns:38px 1fr auto;align-items:center;min-height:50px;border-bottom:1px solid var(--color-border)}.ranking li>span{color:var(--gold-300)}.ranking small{color:var(--moon-300)}.records{margin-top:16px}.record-list>div{display:grid;grid-template-columns:1fr 1.5fr 1fr;gap:18px;padding:14px 0;border-top:1px solid var(--color-border)}.record-list span,.record-list time,.empty-copy{color:var(--moon-300)}@media(max-width:800px){.metrics,.dashboard-grid{grid-template-columns:1fr}.bars{height:220px}.record-list>div{grid-template-columns:1fr}.record-list time{text-align:left}}
 </style>

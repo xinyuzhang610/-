@@ -1,9 +1,3 @@
 import axios from 'axios'
-
-const api = axios.create({
-  baseURL: '/api',
-  timeout: 10000
-})
-
-export const getRecommendation = (data) =>
-  api.post('/recommend/', data)
+const client = axios.create({ baseURL: '/api/recommend', timeout: 10000 })
+export const getRecommendation = (payload) => client.post('/', payload)

@@ -32,3 +32,12 @@ __pycache__/
 
 # 前端缓存
 .cache/
+
+# 本地助手与编辑器状态
+.superpowers/
+~$*
+
+# 测试与覆盖率产物
+coverage/
+.coverage
+.pytest_cache/

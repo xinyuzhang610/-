@@ -1,10 +1,9 @@
 import axios from 'axios'
 
-const api = axios.create({
-  baseURL: '/api',
+const authClient = axios.create({
+  baseURL: '/api/auth',
   timeout: 10000
 })
 
-export const login = (data) => api.post('/auth/login', data)
-export const register = (data) => api.post('/auth/register', data)
-export const getProfile = (userId) => api.get(`/auth/profile/${userId}`)
+export const login = (credentials) => authClient.post('/login', credentials)
+export const register = (profile) => authClient.post('/register', profile)

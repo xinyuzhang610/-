@@ -1,0 +1,139 @@
+:root {
+  color-scheme: light;
+
+  /* Eastern-futurist palette */
+  --ink-950: #101916;
+  --ink-900: #16221e;
+  --ink-800: #24332e;
+  --ink-600: #50615b;
+  --ink-300: #aab6b1;
+  --jade-700: #176b5a;
+  --jade-500: #24977c;
+  --jade-400: #42b99a;
+  --jade-200: #a9ddce;
+  --gold-600: #9d6c1d;
+  --gold-400: #d5a64f;
+  --gold-300: #e4c477;
+  --gold-200: #f1d99d;
+  --moon-50: #f8faf5;
+  --moon-100: #f0f2e9;
+  --moon-200: #e4e8dc;
+  --moon-300: #cbd3c9;
+  --cinnabar-700: #8f2f2a;
+  --cinnabar-500: #bd453b;
+
+  --color-ink: var(--ink-950);
+  --color-ink-soft: var(--ink-600);
+  --color-jade: var(--jade-700);
+  --color-gold: var(--gold-600);
+  --color-moon: var(--moon-50);
+  --color-cinnabar: var(--cinnabar-500);
+  --color-bg: var(--moon-50);
+  --color-border: #c4ccc7;
+  --color-chip-bg: var(--moon-100);
+  --color-primary: var(--jade-700);
+  --color-primary-hover: #105446;
+  --color-success: var(--jade-700);
+  --color-warning: var(--gold-600);
+  --color-danger: var(--cinnabar-700);
+  /* Dark jade maintains greater than 3:1 contrast on moon and white surfaces. */
+  --focus-ring: #0f5b4d;
+  --color-arts: #66527e;
+  --color-science: #315f72;
+
+  /* Existing student palette aliases */
+  --color-bg-cute: linear-gradient(135deg, #e8f4f8 0%, #f0e6f6 50%, #fce4ec 100%);
+  --color-bubble-blue: #81d4fa;
+  --color-bubble-purple: #ce93d8;
+  --color-bubble-pink: #f48fb1;
+  --color-bubble-green: #80cbc4;
+  --color-bubble-orange: #ffcc80;
+  --color-bubble-yellow: #fff59d;
+
+  /* Typography */
+  --font-title: "Noto Serif SC", "Songti SC", STSong, Georgia, serif;
+  --font-display: var(--font-title);
+  --font-heading: "Noto Serif SC", "Songti SC", STSong, Georgia, serif;
+  --font-body: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-ui: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-cute: "PingFang SC", "Noto Sans SC", sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.5rem;
+  --font-size-display: clamp(2.5rem, 7vw, 6.5rem);
+  --line-height-tight: 1.15;
+  --line-height-body: 1.65;
+
+  /* Spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+  --space-4xl: 6rem;
+
+  /* Shape and depth */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 3px rgb(16 25 22 / 8%);
+  --shadow-md: 0 10px 30px rgb(16 25 22 / 10%);
+  --shadow-lg: 0 24px 64px rgb(16 25 22 / 14%);
+  --shadow-jade: 0 18px 44px rgb(23 107 90 / 18%);
+
+  /* Translucent material surfaces */
+  --material-paper: rgb(248 250 245 / 92%);
+  --material-glass: rgb(240 242 233 / 72%);
+  --material-panel: linear-gradient(145deg, rgb(255 255 255 / 88%), rgb(228 232 220 / 62%));
+  --material-panel-dark: linear-gradient(145deg, rgb(255 255 255 / 7%), rgb(66 185 154 / 3%));
+  --material-panel-strong: linear-gradient(145deg, rgb(255 255 255 / 11%), rgb(66 185 154 / 7%));
+  --material-border: 1px solid rgb(255 255 255 / 64%);
+  --material-blur: blur(18px) saturate(130%);
+
+  /* Brand primitive effects */
+  --effect-brand-seal-shadow: rgb(23 107 90 / 16%);
+  --effect-button-gold-shadow: rgb(157 108 29 / 20%);
+  --effect-panel-inlay: rgb(213 166 79 / 18%);
+  --effect-jade-soft: rgb(66 185 154 / 14%);
+  --effect-gold-soft: rgb(213 166 79 / 13%);
+  --effect-core-surface: rgb(169 221 206 / 16%);
+  --effect-core-halo-gold: rgb(241 217 157 / 86%);
+  --effect-core-halo-jade: rgb(66 185 154 / 42%);
+  --effect-core-halo-clear: rgb(23 107 90 / 0%);
+  --effect-core-link: rgb(169 221 206 / 17%);
+  --effect-core-node-gold: rgb(213 166 79 / 92%);
+  --effect-core-node-jade: rgb(66 185 154 / 82%);
+  --effect-core-center: rgb(248 250 245 / 92%);
+  --effect-core-center-ring: rgb(213 166 79 / 90%);
+  --effect-landscape-sky: linear-gradient(to bottom, transparent, rgb(169 221 206 / 26%));
+  --effect-landscape-moon: rgb(241 217 157 / 70%);
+  --effect-landscape-far-ink: rgb(23 107 90 / 12%);
+  --effect-landscape-near-ink: rgb(36 51 46 / 72%);
+  --effect-landscape-ridge: var(--gold-400);
+  --effect-landscape-mist: linear-gradient(90deg, transparent, rgb(248 250 245 / 82%) 30%, rgb(240 242 233 / 66%) 64%, transparent);
+  --effect-landscape-grain-ink: var(--ink-600);
+  --effect-landscape-grain-gold: var(--gold-600);
+
+  /* Motion */
+  --duration-fast: 150ms;
+  --motion-fast: var(--duration-fast);
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  --duration-reveal: 700ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-reveal: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@supports (color: color-mix(in srgb, black, transparent)) {
+  :root {
+    --color-border: color-mix(in srgb, var(--ink-950) 20%, transparent);
+  }
+}
