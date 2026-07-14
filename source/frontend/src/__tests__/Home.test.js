@@ -68,4 +68,29 @@ describe('Home.vue', () => {
       '而在知识尚未成路'
     ])
   })
+
+  it('renders both journey illustrations in crop-safe subject frames', async () => {
+    const wrapper = await mountHome()
+
+    expect(wrapper.findAll('.journey-subject')).toHaveLength(2)
+    expect(wrapper.findAll('.journey-subject__atmosphere')).toHaveLength(2)
+    expect(wrapper.findAll('.journey-subject__subject')).toHaveLength(2)
+  })
+
+  it('provides a progressive hero reveal with a static reduced-motion state', async () => {
+    const wrapper = await mountHome()
+
+    expect(wrapper.get('[data-testid="hero-reveal-canvas"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="hero-scratch-reveal"]').attributes('data-static')).toBe('true')
+    expect(wrapper.find('.hero__reveal-hint').exists()).toBe(false)
+  })
+
+  it('keeps a clean hero surface when the background image cannot load', async () => {
+    const wrapper = await mountHome()
+    await wrapper.get('[data-testid="hero-background-image"]').trigger('error')
+
+    expect(wrapper.find('[data-testid="hero-background-image"]').exists()).toBe(false)
+    expect(wrapper.get('.hero__art').classes()).toContain('hero__art--fallback')
+    expect(wrapper.get('[data-testid="teacher-entry"]').exists()).toBe(true)
+  })
 })
