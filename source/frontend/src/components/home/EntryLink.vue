@@ -51,7 +51,8 @@ defineProps({
   color: var(--moon-50);
   font-family: var(--font-body);
   font-size: .95rem;
-  font-weight: 600;
+  font-weight: 500;
+  letter-spacing: .08em;
   line-height: 1;
   text-decoration: none;
 }
