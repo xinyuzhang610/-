@@ -6,9 +6,10 @@ class Settings(BaseSettings):
     APP_NAME: str = "智教通"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
+    SECRET_KEY: str = "zjiaotong-secret-key-2024"
     
     # 数据库配置
-    DATABASE_URL: str = "mysql+pymysql://root:password@localhost:3306/zjiaotong"
+    DATABASE_URL: str = "mysql+pymysql://root:admin@localhost:3306/zjiaotong"
     
     # DeepSeek API配置
     DEEPSEEK_API_KEY: str = ""
