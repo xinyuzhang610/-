@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 私密安全报告
+    url: https://github.com/xinyuzhang610/-/security/advisories/new
+    about: 漏洞、密钥或个人信息泄露请使用私密 Security Advisory，不要公开创建 Issue。
