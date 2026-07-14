@@ -1,90 +1,101 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { brushRadius, interpolateStroke } from './heroScratch'
+import {
+  INK_REVEAL,
+  createInkStamp,
+  interpolateStroke,
+  sampleInkStamp
+} from './heroScratch'
 
 const props = defineProps({ skipped: { type: Boolean, default: false } })
 const emit = defineEmits(['first-reveal', 'static-mode'])
 
 const canvas = ref(null)
 const staticMode = ref(false)
-const normalizedPoints = []
-const pendingPoints = []
+const stamps = []
 let context
 let observer
 let frame = 0
+let running = false
 let lastPoint
+let width = 0
+let height = 0
 let firstRevealSent = false
 let staticModeSent = false
-let touchActive = false
-let touchRevealActive = false
-let touchOrigin
 
 function paintMask() {
-  if (!context || !canvas.value) return
-  const { width, height } = canvas.value.getBoundingClientRect()
+  if (!context || !width || !height) return
   context.globalCompositeOperation = 'source-over'
-  context.clearRect(0, 0, width, height)
   const wash = context.createLinearGradient(0, 0, width, height)
-  wash.addColorStop(0, 'rgba(6, 16, 13, .98)')
-  wash.addColorStop(.48, 'rgba(14, 29, 23, .94)')
-  wash.addColorStop(1, 'rgba(41, 50, 41, .86)')
+  wash.addColorStop(0, 'rgb(3 17 13)')
+  wash.addColorStop(.48, 'rgb(8 26 20)')
+  wash.addColorStop(1, 'rgb(24 40 31)')
   context.fillStyle = wash
   context.fillRect(0, 0, width, height)
 }
 
-function erasePoint(point) {
-  if (!context) return
-  const texturedRadius = point.radius * (.88 + Math.sin(point.seed * 1.71) * .08)
+function carveInk(sample) {
   const brush = context.createRadialGradient(
-    point.x,
-    point.y,
-    texturedRadius * .18,
-    point.x,
-    point.y,
-    texturedRadius
+    sample.x,
+    sample.y,
+    sample.radius * .25,
+    sample.x,
+    sample.y,
+    sample.radius
   )
-  brush.addColorStop(0, 'rgba(0, 0, 0, 1)')
-  brush.addColorStop(.68, 'rgba(0, 0, 0, .9)')
+  brush.addColorStop(0, `rgba(0, 0, 0, ${.95 * sample.alpha})`)
+  brush.addColorStop(.55, `rgba(0, 0, 0, ${.88 * sample.alpha})`)
   brush.addColorStop(1, 'rgba(0, 0, 0, 0)')
-  context.globalCompositeOperation = 'destination-out'
   context.fillStyle = brush
   context.beginPath()
-  context.arc(point.x, point.y, texturedRadius, 0, Math.PI * 2)
+  const segments = 32
+  for (let index = 0; index <= segments; index += 1) {
+    const angle = (index / segments) * Math.PI * 2
+    const wobble = 0.78
+      + 0.14 * Math.sin(angle * 3 + sample.seed)
+      + 0.08 * Math.sin(angle * 7 + sample.seed * 2.1)
+      + 0.05 * Math.sin(angle * 13 + sample.seed * .7)
+    const radius = sample.radius * wobble
+    const x = sample.x + Math.cos(angle) * radius
+    const y = sample.y + Math.sin(angle) * radius
+    if (index === 0) context.moveTo(x, y)
+    else context.lineTo(x, y)
+  }
+  context.closePath()
   context.fill()
 }
 
-function resizeAndRedraw() {
-  if (!canvas.value || staticMode.value || props.skipped || !context) return
-  lastPoint = undefined
-  const rect = canvas.value.getBoundingClientRect()
-  if (!rect.width || !rect.height) return
-  const ratio = Math.min(window.devicePixelRatio || 1, 2)
-  canvas.value.width = Math.round(rect.width * ratio)
-  canvas.value.height = Math.round(rect.height * ratio)
-  context.setTransform(ratio, 0, 0, ratio, 0, 0)
-  paintMask()
-  const shortestSide = Math.min(rect.width, rect.height)
-  normalizedPoints.forEach((point) => erasePoint({
-    x: point.x * rect.width,
-    y: point.y * rect.height,
-    radius: point.radius * shortestSide,
-    seed: point.seed
-  }))
-}
-
-function flushPoints() {
+function drawFrame(now) {
   frame = 0
-  pendingPoints.splice(0).forEach(erasePoint)
+  if (!context || staticMode.value || props.skipped) {
+    running = false
+    return
+  }
+
+  paintMask()
+  context.globalCompositeOperation = 'destination-out'
+  for (let index = stamps.length - 1; index >= 0; index -= 1) {
+    const sample = sampleInkStamp(stamps[index], now)
+    if (!sample) {
+      stamps.splice(index, 1)
+      continue
+    }
+    carveInk(sample)
+  }
+
+  if (stamps.length) frame = requestAnimationFrame(drawFrame)
+  else running = false
 }
 
-function isIntentionalTouchMove(event, current) {
-  if (event.pointerType !== 'touch') return true
-  if (!touchActive || !touchOrigin) return false
-  if (touchRevealActive) return true
-  const dx = Math.abs(current.x - touchOrigin.x)
-  const dy = Math.abs(current.y - touchOrigin.y)
-  touchRevealActive = dx >= 10 && dx >= dy * .65
-  return touchRevealActive
+function startLoop() {
+  if (running) return
+  running = true
+  frame = requestAnimationFrame(drawFrame)
+}
+
+function addStamp(point, now) {
+  if (stamps.length >= INK_REVEAL.maxStamps) stamps.shift()
+  stamps.push(createInkStamp({ x: point.x, y: point.y, now }))
 }
 
 function queuePoint(event) {
@@ -92,62 +103,66 @@ function queuePoint(event) {
   const rect = canvas.value.getBoundingClientRect()
   const current = {
     x: event.clientX - rect.left,
-    y: event.clientY - rect.top,
-    time: event.timeStamp || performance.now()
+    y: event.clientY - rect.top
   }
-  if (!isIntentionalTouchMove(event, current)) return
-
-  const elapsed = Math.max(8, current.time - (lastPoint?.time || current.time - 16))
-  const distance = lastPoint ? Math.hypot(current.x - lastPoint.x, current.y - lastPoint.y) : 0
-  const speed = distance / elapsed
-  const shortestSide = Math.min(rect.width, rect.height)
-  const radius = brushRadius(speed, shortestSide)
+  const now = performance.now()
   const samples = lastPoint
-    ? interpolateStroke(lastPoint, current, Math.max(8, radius * .24))
+    ? interpolateStroke(lastPoint, current, INK_REVEAL.spacing)
     : [current]
 
-  samples.forEach((sample) => {
-    const point = { x: sample.x, y: sample.y, radius, seed: normalizedPoints.length + 1 }
-    pendingPoints.push(point)
-    normalizedPoints.push({
-      x: sample.x / rect.width,
-      y: sample.y / rect.height,
-      radius: radius / shortestSide,
-      seed: point.seed
-    })
-  })
+  samples.forEach((sample) => addStamp(sample, now))
   lastPoint = current
   if (!firstRevealSent) {
     firstRevealSent = true
     emit('first-reveal')
   }
-  if (!frame) frame = requestAnimationFrame(flushPoints)
+  startLoop()
 }
 
-function onPointerDown(event) {
-  if (event.pointerType !== 'touch' || !canvas.value) return
+function onPointerLeave() {
+  lastPoint = undefined
+}
+
+function resizeAndRedraw() {
+  if (!canvas.value || staticMode.value || props.skipped || !context) return
   const rect = canvas.value.getBoundingClientRect()
+  if (!rect.width || !rect.height) return
+  const ratio = Math.min(window.devicePixelRatio || 1, 2)
+  width = rect.width
+  height = rect.height
+  canvas.value.width = Math.round(width * ratio)
+  canvas.value.height = Math.round(height * ratio)
+  context.setTransform(ratio, 0, 0, ratio, 0, 0)
+  cancelAnimationFrame(frame)
+  frame = 0
+  running = false
   lastPoint = undefined
-  touchActive = true
-  touchRevealActive = false
-  touchOrigin = { x: event.clientX - rect.left, y: event.clientY - rect.top }
+  stamps.length = 0
+  paintMask()
 }
 
-function onPointerLeave(event) {
-  if (event.pointerType !== 'touch') lastPoint = undefined
+function addListeners() {
+  canvas.value?.addEventListener('pointerenter', queuePoint)
+  canvas.value?.addEventListener('pointermove', queuePoint)
+  canvas.value?.addEventListener('pointerleave', onPointerLeave)
 }
 
-function onPointerUp() {
-  touchActive = false
-  touchRevealActive = false
-  touchOrigin = undefined
-  lastPoint = undefined
+function removeListeners() {
+  canvas.value?.removeEventListener('pointerenter', queuePoint)
+  canvas.value?.removeEventListener('pointermove', queuePoint)
+  canvas.value?.removeEventListener('pointerleave', onPointerLeave)
+  window.removeEventListener('resize', resizeAndRedraw)
 }
 
 function enterStaticMode() {
   staticMode.value = true
-  pendingPoints.length = 0
-  normalizedPoints.length = 0
+  cancelAnimationFrame(frame)
+  frame = 0
+  running = false
+  stamps.length = 0
+  lastPoint = undefined
+  removeListeners()
+  observer?.disconnect()
   if (canvas.value) canvas.value.hidden = true
   if (!staticModeSent) {
     staticModeSent = true
@@ -155,31 +170,17 @@ function enterStaticMode() {
   }
 }
 
-function addListeners() {
-  canvas.value.addEventListener('pointermove', queuePoint)
-  canvas.value.addEventListener('pointerdown', onPointerDown)
-  canvas.value.addEventListener('pointerup', onPointerUp)
-  canvas.value.addEventListener('pointercancel', onPointerUp)
-  canvas.value.addEventListener('pointerleave', onPointerLeave)
-}
-
-function removeListeners() {
-  canvas.value?.removeEventListener('pointermove', queuePoint)
-  canvas.value?.removeEventListener('pointerdown', onPointerDown)
-  canvas.value?.removeEventListener('pointerup', onPointerUp)
-  canvas.value?.removeEventListener('pointercancel', onPointerUp)
-  canvas.value?.removeEventListener('pointerleave', onPointerLeave)
-  window.removeEventListener('resize', resizeAndRedraw)
-}
-
 onMounted(() => {
+  const hoverQuery = window.matchMedia?.('(hover: hover)')
   const motionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)')
+  const canHover = hoverQuery?.matches === true
   const reduced = motionQuery ? motionQuery.matches : true
   const lowMemory = Number(navigator.deviceMemory || 4) <= 2
-  if (props.skipped || reduced || lowMemory) {
+  if (props.skipped || !canHover || reduced || lowMemory) {
     enterStaticMode()
     return
   }
+
   try {
     context = canvas.value?.getContext('2d')
   } catch {
@@ -208,8 +209,7 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(frame)
   observer?.disconnect()
   removeListeners()
-  pendingPoints.length = 0
-  normalizedPoints.length = 0
+  stamps.length = 0
 })
 </script>
 
@@ -230,8 +230,8 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.hero-scratch { position: absolute; z-index: 1; inset: 0; background: #0a1411; pointer-events: none; }
+.hero-scratch { position: absolute; z-index: 1; inset: 0; background: transparent; pointer-events: none; }
 .hero-scratch[data-static='true'] { display: none; }
-.hero-scratch__canvas { width: 100%; height: 100%; filter: contrast(1.03); pointer-events: auto; touch-action: pan-y; }
+.hero-scratch__canvas { width: 100%; height: 100%; filter: contrast(1.04); pointer-events: auto; }
 .hero-scratch__canvas[hidden] { display: none; }
 </style>
