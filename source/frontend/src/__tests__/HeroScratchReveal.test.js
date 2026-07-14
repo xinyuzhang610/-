@@ -20,6 +20,7 @@ const context = {
 }
 const disconnect = vi.fn()
 const animationFrames = []
+let now = 20
 
 function runNextFrame(now) {
   const callback = animationFrames.shift()
@@ -43,7 +44,7 @@ function installBrowserStubs({ reduced = false, hover = true } = {}) {
     disconnect() { disconnect() }
   })
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context)
-  vi.spyOn(performance, 'now').mockReturnValue(20)
+  vi.spyOn(performance, 'now').mockImplementation(() => now)
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
     left: 0, top: 0, width: 1000, height: 700, right: 1000, bottom: 700
   })
@@ -53,6 +54,7 @@ describe('HeroScratchReveal', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     animationFrames.length = 0
+    now = 20
     installBrowserStubs()
   })
 
@@ -114,6 +116,24 @@ describe('HeroScratchReveal', () => {
     runNextFrame(40)
 
     expect(context.createRadialGradient.mock.calls.length - firstFrameGradients).toBeLessThanOrEqual(3)
+    wrapper.unmount()
+  })
+
+  it('starts a fresh ink bloom after a stale pointer sampling gap', async () => {
+    const wrapper = mount(HeroScratchReveal)
+    await wrapper.get('canvas').trigger('pointermove', {
+      pointerType: 'mouse', clientX: 100, clientY: 200
+    })
+    runNextFrame(20)
+    const firstFrameGradients = context.createRadialGradient.mock.calls.length
+
+    now = 700
+    await wrapper.get('canvas').trigger('pointermove', {
+      pointerType: 'mouse', clientX: 900, clientY: 200
+    })
+    runNextFrame(700)
+
+    expect(context.createRadialGradient.mock.calls.length - firstFrameGradients).toBe(1)
     wrapper.unmount()
   })
 

@@ -13,6 +13,7 @@ const emit = defineEmits(['first-reveal', 'static-mode'])
 const canvas = ref(null)
 const staticMode = ref(false)
 const stamps = []
+const MAX_SAMPLE_GAP = 80
 let context
 let observer
 let frame = 0
@@ -101,12 +102,13 @@ function addStamp(point, now) {
 function queuePoint(event) {
   if (staticMode.value || props.skipped || !canvas.value || !context) return
   const rect = canvas.value.getBoundingClientRect()
+  const now = performance.now()
   const current = {
     x: event.clientX - rect.left,
-    y: event.clientY - rect.top
+    y: event.clientY - rect.top,
+    time: now
   }
-  const now = performance.now()
-  const samples = lastPoint
+  const samples = lastPoint && now - lastPoint.time <= MAX_SAMPLE_GAP
     ? interpolateStroke(lastPoint, current, INK_REVEAL.spacing)
     : [current]
 
