@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from api.dependencies import get_current_user, require_roles
 from models.conversation import ConversationMessage, ConversationSession
-from models.database import get_db
+from models.database import SessionLocal, get_db
 from models.tool import Tool
 from models.usage import UsageLog
 from models.user import User
@@ -50,18 +50,37 @@ async def chat(payload: ChatRequest, db: Session = Depends(get_db), user: User =
 
 @router.post("/stream")
 async def stream_chat(payload: ChatRequest, request: Request, db: Session = Depends(get_db), user: User = Depends(require_roles("student"))):
-    tool = _tool(db, user, payload.tool_id); session = _session(db, user.id, payload.session_id, payload.tool_id); db.commit()
+    tool = _tool(db, user, payload.tool_id)
+    session = _session(db, user.id, payload.session_id, payload.tool_id)
+    # FastAPI closes request-scoped dependencies before a StreamingResponse is
+    # consumed. Capture all metadata while this request session is still open,
+    # then use a dedicated session for the lifetime of the stream.
+    session_id = session.id
+    user_id = user.id
+    tool_id = tool.id if tool else None
+    tool_name = tool.name if tool else None
+    system_prompt = tool.prompt_template if tool else None
+    db.commit()
+
     async def events():
+        stream_db = SessionLocal()
         reply = ""; started = time.perf_counter()
-        yield f"event: meta\ndata: {json.dumps({'session_id': session.id, 'tool_name': tool.name if tool else None})}\n\n"
         try:
-            async for delta in stream_with_deepseek(payload.message, tool.prompt_template if tool else None, _history(db, session.id)):
+            stream_session = stream_db.get(ConversationSession, session_id)
+            stream_user = stream_db.get(User, user_id)
+            stream_tool = stream_db.get(Tool, tool_id) if tool_id else None
+            if not stream_session or not stream_user:
+                raise AIConfigurationError("会话已失效，请重新发起对话")
+            yield f"event: meta\ndata: {json.dumps({'session_id': session_id, 'tool_name': tool_name})}\n\n"
+            async for delta in stream_with_deepseek(payload.message, system_prompt, _history(stream_db, session_id)):
                 if await request.is_disconnected():
-                    db.add(UsageLog(user_id=user.id, tool_id=tool.id if tool else None, input_text=payload.message, session_id=session.id, status="aborted")); db.commit(); return
+                    stream_db.add(UsageLog(user_id=user_id, tool_id=tool_id, input_text=payload.message, session_id=session_id, status="aborted")); stream_db.commit(); return
                 reply += delta; yield f"event: delta\ndata: {json.dumps({'text': delta}, ensure_ascii=False)}\n\n"
-            _complete(db, user, session, tool, payload.message, reply, started)
-            yield f"event: done\ndata: {json.dumps({'session_id': session.id})}\n\n"
+            _complete(stream_db, stream_user, stream_session, stream_tool, payload.message, reply, started)
+            yield f"event: done\ndata: {json.dumps({'session_id': session_id})}\n\n"
         except (AIConfigurationError, DeepSeekRequestError) as error:
-            db.add(UsageLog(user_id=user.id, tool_id=tool.id if tool else None, input_text=payload.message, session_id=session.id, status="aborted")); db.commit()
+            stream_db.add(UsageLog(user_id=user_id, tool_id=tool_id, input_text=payload.message, session_id=session_id, status="aborted")); stream_db.commit()
             yield f"event: error\ndata: {json.dumps({'message': str(error)}, ensure_ascii=False)}\n\n"
+        finally:
+            stream_db.close()
     return StreamingResponse(events(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
