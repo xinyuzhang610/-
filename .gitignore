@@ -35,6 +35,7 @@ __pycache__/
 
 # 本地助手与编辑器状态
 .superpowers/
+.codex/
 ~$*
 
 # 测试与覆盖率产物
