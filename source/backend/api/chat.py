@@ -1,59 +1,67 @@
-from fastapi import APIRouter, Depends, HTTPException
+import json
+import time
+import uuid
+from datetime import datetime
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+from api.dependencies import get_current_user, require_roles
+from models.conversation import ConversationMessage, ConversationSession
 from models.database import get_db
 from models.tool import Tool
 from models.usage import UsageLog
-from schemas.chat import ChatRequest, ChatResponse
-from services.deepseek import chat_with_deepseek
-from services.deepseek import AIConfigurationError, DeepSeekRequestError
-from api.dependencies import get_current_user
 from models.user import User
-import uuid
+from schemas.chat import ChatRequest, ChatResponse
+from services.deepseek import AIConfigurationError, DeepSeekRequestError, chat_with_deepseek, stream_with_deepseek
+from services.tool_access_service import assert_tool_can_be_used
 
 router = APIRouter()
 
+def _session(db, user_id, requested, tool_id):
+    if requested:
+        row = db.query(ConversationSession).filter(ConversationSession.id == requested, ConversationSession.user_id == user_id).first()
+        if not row: raise HTTPException(status_code=403, detail="会话不存在或不属于当前用户")
+        return row
+    row = ConversationSession(id=str(uuid.uuid4()), user_id=user_id, tool_id=tool_id); db.add(row); db.flush(); return row
+
+def _tool(db, user, tool_id):
+    if not tool_id: return None
+    row = db.query(Tool).filter(Tool.id == tool_id).first()
+    if not row: raise HTTPException(status_code=404, detail="工具不存在")
+    assert_tool_can_be_used(user, row); return row
+
+def _history(db, session_id):
+    rows = db.query(ConversationMessage).filter(ConversationMessage.session_id == session_id).order_by(ConversationMessage.created_at.desc()).limit(12).all()
+    return [{"role": row.role, "content": row.content} for row in reversed(rows)]
+
+def _complete(db, user, session, tool, message, reply, started):
+    db.add_all([ConversationMessage(session_id=session.id, role="user", content=message), ConversationMessage(session_id=session.id, role="assistant", content=reply), UsageLog(user_id=user.id, tool_id=tool.id if tool else None, input_text=message, output_text=reply, session_id=session.id, status="completed", latency_ms=int((time.perf_counter() - started) * 1000), completed_at=datetime.utcnow())])
+    if tool: tool.usage_count += 1
+    session.last_activity_at = datetime.utcnow(); db.commit()
+
 @router.post("/", response_model=ChatResponse)
-async def chat(request: ChatRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    session_id = request.session_id or str(uuid.uuid4())
+async def chat(payload: ChatRequest, db: Session = Depends(get_db), user: User = Depends(require_roles("student"))):
+    tool = _tool(db, user, payload.tool_id); session = _session(db, user.id, payload.session_id, payload.tool_id); started = time.perf_counter()
+    try: reply = await chat_with_deepseek(payload.message, tool.prompt_template if tool else None)
+    except AIConfigurationError as error: raise HTTPException(status_code=503, detail=str(error))
+    except DeepSeekRequestError as error: raise HTTPException(status_code=error.status_code, detail=str(error))
+    _complete(db, user, session, tool, payload.message, reply, started)
+    return ChatResponse(reply=reply, session_id=session.id, tool_name=tool.name if tool else None)
 
-    # 获取工具提示词（如果指定了工具）
-    system_prompt = None
-    tool_name = None
-    if request.tool_id:
-        tool = db.query(Tool).filter(Tool.id == request.tool_id).first()
-        if not tool:
-            raise HTTPException(status_code=404, detail="工具不存在")
-        system_prompt = tool.prompt_template
-        tool_name = tool.name
-
-        # 更新使用次数
-        tool.usage_count += 1
-        db.commit()
-
-    # 调用DeepSeek API
-    try:
-        reply = await chat_with_deepseek(request.message, system_prompt)
-    except AIConfigurationError as e:
-        raise HTTPException(status_code=503, detail=str(e))
-    except DeepSeekRequestError as e:
-        raise HTTPException(status_code=e.status_code, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI服务调用失败: {str(e)}")
-
-    # 记录使用日志
-    tool_id = request.tool_id if request.tool_id else 1
-    usage_log = UsageLog(
-        tool_id=tool_id,
-        input_text=request.message,
-        output_text=reply,
-        session_id=session_id,
-        user_id=current_user.id
-    )
-    db.add(usage_log)
-    db.commit()
-
-    return ChatResponse(
-        reply=reply,
-        session_id=session_id,
-        tool_name=tool_name
-    )
+@router.post("/stream")
+async def stream_chat(payload: ChatRequest, request: Request, db: Session = Depends(get_db), user: User = Depends(require_roles("student"))):
+    tool = _tool(db, user, payload.tool_id); session = _session(db, user.id, payload.session_id, payload.tool_id); db.commit()
+    async def events():
+        reply = ""; started = time.perf_counter()
+        yield f"event: meta\ndata: {json.dumps({'session_id': session.id, 'tool_name': tool.name if tool else None})}\n\n"
+        try:
+            async for delta in stream_with_deepseek(payload.message, tool.prompt_template if tool else None, _history(db, session.id)):
+                if await request.is_disconnected():
+                    db.add(UsageLog(user_id=user.id, tool_id=tool.id if tool else None, input_text=payload.message, session_id=session.id, status="aborted")); db.commit(); return
+                reply += delta; yield f"event: delta\ndata: {json.dumps({'text': delta}, ensure_ascii=False)}\n\n"
+            _complete(db, user, session, tool, payload.message, reply, started)
+            yield f"event: done\ndata: {json.dumps({'session_id': session.id})}\n\n"
+        except (AIConfigurationError, DeepSeekRequestError) as error:
+            db.add(UsageLog(user_id=user.id, tool_id=tool.id if tool else None, input_text=payload.message, session_id=session.id, status="aborted")); db.commit()
+            yield f"event: error\ndata: {json.dumps({'message': str(error)}, ensure_ascii=False)}\n\n"
+    return StreamingResponse(events(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})

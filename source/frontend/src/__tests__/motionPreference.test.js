@@ -77,10 +77,12 @@ describe('useReveal', () => {
     let callback
     const observe = vi.fn()
     const disconnect = vi.fn()
-    const IntersectionObserver = vi.fn((observerCallback) => {
+    const observerSpy = vi.fn()
+    function IntersectionObserver(observerCallback, options) {
+      observerSpy(observerCallback, options)
       callback = observerCallback
       return { observe, disconnect }
-    })
+    }
     vi.stubGlobal('IntersectionObserver', IntersectionObserver)
     vi.stubGlobal('matchMedia', vi.fn(() => ({
       matches: false,
@@ -98,7 +100,7 @@ describe('useReveal', () => {
     })
     const wrapper = mount(component)
 
-    expect(IntersectionObserver).toHaveBeenCalledWith(expect.any(Function), { threshold: 0.18 })
+    expect(observerSpy).toHaveBeenCalledWith(expect.any(Function), { threshold: 0.18 })
     expect(observe).toHaveBeenCalledWith(wrapper.element)
 
     callback([{ isIntersecting: true }])

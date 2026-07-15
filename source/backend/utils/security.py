@@ -15,12 +15,22 @@ def verify_password(password: str, hashed_password: str) -> bool:
     except (ValueError, TypeError):
         return False
 
-def generate_token(user_id: int, role: str, secret_key: str) -> str:
+def generate_token(
+    user_id: int,
+    role: str,
+    secret_key: str,
+    *,
+    jti: str | None = None,
+    token_version: int = 0,
+    expires_minutes: int = 60 * 12,
+) -> str:
     """生成 JWT token"""
     payload = {
         "user_id": user_id,
         "role": role,
-        "exp": datetime.utcnow() + timedelta(days=7)
+        "jti": jti,
+        "token_version": token_version,
+        "exp": datetime.utcnow() + timedelta(minutes=expires_minutes),
     }
     return jwt.encode(payload, secret_key, algorithm="HS256")
 

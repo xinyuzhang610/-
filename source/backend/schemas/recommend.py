@@ -4,6 +4,7 @@ from typing import List, Optional
 class RecommendRequest(BaseModel):
     step: int
     category: Optional[str] = None
+    subject: Optional[str] = None
     need_type: Optional[str] = None
 
 class RecommendResponse(BaseModel):

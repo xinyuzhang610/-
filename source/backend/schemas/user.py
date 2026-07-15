@@ -32,6 +32,8 @@ class UserUpdate(BaseModel):
 class UserResponse(UserBase):
     id: int
     created_at: datetime
+    is_active: bool = True
+    last_login_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -40,6 +42,13 @@ class UserResponse(UserBase):
 class LoginRequest(BaseModel):
     username: str
     password: str
+    captcha_token: Optional[str] = None
+
+
+class PasswordChangeRequest(BaseModel):
+    old_password: str
+    new_password: str
+    confirm_password: str
 
 # 登录响应模型
 class TokenResponse(BaseModel):

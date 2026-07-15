@@ -241,16 +241,18 @@ describe('brand primitives', () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context)
     let intersectionCallback
     const intersectionObserver = { observe: vi.fn(), disconnect: vi.fn() }
-    vi.stubGlobal('IntersectionObserver', vi.fn((callback) => {
+    function IntersectionObserver(callback) {
       intersectionCallback = callback
       return intersectionObserver
-    }))
+    }
+    vi.stubGlobal('IntersectionObserver', IntersectionObserver)
     let resizeCallback
     const resizeObserver = { observe: vi.fn(), disconnect: vi.fn() }
-    vi.stubGlobal('ResizeObserver', vi.fn((callback) => {
+    function ResizeObserver(callback) {
       resizeCallback = callback
       return resizeObserver
-    }))
+    }
+    vi.stubGlobal('ResizeObserver', ResizeObserver)
     const removeDocumentListener = vi.spyOn(document, 'removeEventListener')
     const raf = createRafQueue()
 
@@ -301,15 +303,17 @@ describe('brand primitives', () => {
   it('reduces knowledge-core work after a slow frame and responds to resize', async () => {
     stubMotionPreference(false)
     let intersectionCallback
-    vi.stubGlobal('IntersectionObserver', vi.fn((callback) => {
+    function IntersectionObserver(callback) {
       intersectionCallback = callback
       return { observe: vi.fn(), disconnect: vi.fn() }
-    }))
+    }
+    vi.stubGlobal('IntersectionObserver', IntersectionObserver)
     let resizeCallback
-    vi.stubGlobal('ResizeObserver', vi.fn((callback) => {
+    function ResizeObserver(callback) {
       resizeCallback = callback
       return { observe: vi.fn(), disconnect: vi.fn() }
-    }))
+    }
+    vi.stubGlobal('ResizeObserver', ResizeObserver)
     vi.stubGlobal('devicePixelRatio', 2.5)
     const context = createCanvasContext()
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context)

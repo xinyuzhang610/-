@@ -53,7 +53,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
+import QRCode from 'qrcode'
 import StatusState from '../../components/ui/StatusState.vue'
 import { createTool, deleteTool, getMyTools, getPresetTools, getShareLink, getTemplates, revokeShare, updateTool } from '../../api/tools'
 import { useDemoMode } from '../../composables/useDemoMode'
@@ -63,7 +64,8 @@ const platformUrl = import.meta.env.VITE_AGENT_PLATFORM_URL || ''
 const { enabled: demoEnabled, getDemoData } = useDemoMode()
 const emptyForm = () => ({ name: '', description: '', category: '通用', subject: '', prompt_template: '', externalUrl: '', is_public: true })
 const form = reactive(emptyForm())
-const qrImage = computed(() => shareInfo.value ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(shareInfo.value.share_url)}` : '')
+const qrImage = ref('')
+watch(shareInfo, async (share) => { qrImage.value = share ? await QRCode.toDataURL(share.share_url, { width: 220, margin: 1 }) : '' })
 
 function resetForm() { Object.assign(form, emptyForm()); editingId.value = null }
 function normalizeTool(tool) { return { ...tool, externalUrl: tool.interface_config?.external_url || '' } }

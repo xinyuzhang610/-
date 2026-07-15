@@ -80,6 +80,35 @@ async def chat_with_deepseek(message: str, system_prompt: str = None) -> str:
         raise DeepSeekRequestError("无法连接 DeepSeek 服务，请稍后重试", 503) from error
 
 
+async def stream_with_deepseek(message: str, system_prompt: str = None, history: list[dict] | None = None):
+    """Yield provider text deltas without persisting any user data."""
+    if settings.AI_PROVIDER == "mock":
+        reply = mock_reply(message, system_prompt)
+        for start in range(0, len(reply), 40):
+            yield reply[start:start + 40]
+        return
+    if not settings.DEEPSEEK_API_KEY or settings.DEEPSEEK_API_KEY == "your_api_key_here":
+        raise AIConfigurationError("DeepSeek API Key is not configured")
+    import json
+    messages = ([{"role": "system", "content": system_prompt}] if system_prompt else []) + (history or []) + [{"role": "user", "content": message}]
+    headers = {"Authorization": f"Bearer {settings.DEEPSEEK_API_KEY}", "Content-Type": "application/json"}
+    payload = {"model": settings.DEEPSEEK_MODEL, "messages": messages, "stream": True, "temperature": 0.7, "max_tokens": 2000}
+    async with httpx.AsyncClient(timeout=45.0) as client:
+        async with client.stream("POST", f"{settings.DEEPSEEK_API_URL}/v1/chat/completions", headers=headers, json=payload) as response:
+            if response.is_error:
+                body = await response.aread(); response._content = body
+                raise _request_error(response)
+            async for line in response.aiter_lines():
+                if not line.startswith("data: ") or line == "data: [DONE]":
+                    continue
+                try:
+                    delta = json.loads(line[6:])["choices"][0].get("delta", {}).get("content")
+                except (ValueError, KeyError, IndexError):
+                    delta = None
+                if delta:
+                    yield delta
+
+
 def mock_reply(message: str, system_prompt: str = None) -> str:
     """模拟AI回复，用于开发测试"""
     if system_prompt:

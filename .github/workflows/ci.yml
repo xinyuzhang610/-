@@ -43,6 +43,19 @@ jobs:
   backend:
     name: Backend tests
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: zjiaotong
+          MYSQL_USER: zjiaotong_app
+          MYSQL_PASSWORD: ci-password
+          MYSQL_ROOT_PASSWORD: ci-root-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -pci-root-password"
+          --health-interval=10s --health-timeout=5s --health-retries=10
     defaults:
       run:
         working-directory: source/backend
@@ -62,3 +75,10 @@ jobs:
 
       - name: Run unit tests
         run: python -m pytest
+
+      - name: Validate Alembic migration on MySQL
+        env:
+          DATABASE_URL: mysql+pymysql://zjiaotong_app:ci-password@127.0.0.1:3306/zjiaotong
+        run: |
+          python -m alembic -c alembic.ini upgrade head
+          python -m alembic -c alembic.ini current
