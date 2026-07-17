@@ -1,3 +1,4 @@
 import { createApiClient } from './client'
-const client = createApiClient('/api/recommend')
+import { getApiBaseUrl } from './baseUrl'
+const client = createApiClient(getApiBaseUrl('/recommend'))
 export const getRecommendation = (payload) => client.post('/', payload)
