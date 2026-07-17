@@ -33,8 +33,7 @@ h2 { max-width: 14em; margin-top: 1rem; font-family: var(--font-title); font-siz
 h2 span, h2 strong { display: block; }
 h2 span { color: #777; font-size: .72em; font-weight: 400; letter-spacing: -.015em; }
 h2 strong { margin-top: .28em; color: var(--color-ink); font-weight: 500; }
-h2 { transition: transform .3s var(--ease-out); cursor: default; }
-h2:hover { transform: scale(1.03); }
+@media (hover: hover) { h2 { transition: transform .3s var(--ease-out); cursor: default; } h2:hover { transform: scale(1.03); } }
 .showcase__previews { display: grid; grid-template-columns: 1.08fr .92fr; gap: clamp(1rem, 3vw, 2.5rem); align-items: end; margin-top: 2rem; }
 .preview { overflow: hidden; border: 1px solid var(--color-border); border-radius: 1.2rem; background: rgb(248 250 245 / 92%); box-shadow: var(--shadow-lg); }
 .preview--guidance { transform: translateY(-1rem); }

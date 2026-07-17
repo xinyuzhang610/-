@@ -9,6 +9,21 @@ const coarsePointer = ref(false)
 const isStatic = computed(() => !props.parallax || !canAnimate.value || coarsePointer.value)
 let pointerFrameId, pointerX = 0, pointerY = 0, pointerMedia
 
+// 烽火台数据：每项都有完整的 x、y 和唯一 key
+// 位置沿城墙路径分布，x 值对应城墙 brick 路径中的节点位置
+const towers = [
+  { id: 'tower-1', x: 142, y: 348 },
+  { id: 'tower-2', x: 230, y: 318 },
+  { id: 'tower-3', x: 345, y: 286 },
+  { id: 'tower-4', x: 440, y: 318 },
+  { id: 'tower-5', x: 532, y: 310 },
+  { id: 'tower-6', x: 618, y: 318 },
+  { id: 'tower-7', x: 700, y: 340 },
+  { id: 'tower-8', x: 785, y: 362 },
+  { id: 'tower-9', x: 860, y: 334 },
+  { id: 'tower-10', x: 1020, y: 326 },
+]
+
 function applyOffsets(x, y) {
   if (!root.value) return
   const s = root.value.style
@@ -58,9 +73,9 @@ onBeforeUnmount(() => { reset(); pointerMedia?.removeEventListener?.('change', o
       <!-- 城墙 -->
       <path class="ink-wall__brick" d="M62 390h38M138 358l18-3v8l-18 3M230 318l72-9v8l-72 9M345 286l58-5v8l-58 5M440 318l52-2v8l-52 2M532 310l48 4v8l-48-4M618 318l44 6v8l-44-6M700 340l42 10v8l-42-10M785 362l36 10v8l-36-10M860 334l52 8v8l-52-8M940 342l50 6v8l-50-6M1020 326l60-6v8l-60 6M1100 330l40-4v8l-40 4" />
       <!-- 烽火台 -->
-      <g class="ink-wall__tower" v-for="t in [{x:142,y:348},{y:280},{y:335},{y:302},{y:324},{y:324},{y:356},{y:340},{y:332},{y:322}]" :key="t.x">
-        <rect :x="t.x" :y="t.y" width="10" height="18" rx="1" />
-        <rect :x="t.x+2" :y="t.y-3" width="6" height="4" rx="1" />
+      <g class="ink-wall__tower" v-for="tower in towers" :key="tower.id">
+        <rect :x="tower.x" :y="tower.y" width="10" height="18" rx="1" />
+        <rect :x="tower.x + 2" :y="tower.y - 3" width="6" height="4" rx="1" />
       </g>
     </svg>
     <!-- 下雾 -->
