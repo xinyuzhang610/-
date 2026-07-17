@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { getApiBaseUrl } from './baseUrl'
 
 export function createApiClient(baseURL, timeout = 10000) {
   const client = axios.create({ baseURL, timeout })
@@ -10,4 +11,4 @@ export function createApiClient(baseURL, timeout = 10000) {
   return client
 }
 
-export default createApiClient('/api')
+export default createApiClient(getApiBaseUrl())

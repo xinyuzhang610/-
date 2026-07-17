@@ -1,6 +1,7 @@
 import { createApiClient } from './client'
-const client = createApiClient('/api/tools')
-const recommendClient = createApiClient('/api/recommend')
+import { getApiBaseUrl } from './baseUrl'
+const client = createApiClient(getApiBaseUrl('/tools'))
+const recommendClient = createApiClient(getApiBaseUrl('/recommend'))
 export const getPresetTools = (category) => client.get('/presets', { params: category ? { category } : {} })
 export const getRecommendedTools = (category, subject, needType) => recommendClient.post('/', { category, subject, need_type: needType, step: 3 })
 export const getTool = (id) => client.get(`/id/${id}`)
