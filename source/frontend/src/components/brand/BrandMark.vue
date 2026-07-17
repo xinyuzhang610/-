@@ -32,13 +32,13 @@ defineProps({
 .brand-mark {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: 1rem;
   color: var(--color-ink);
 }
 
 .brand-mark__seal {
-  width: 3rem;
-  flex: 0 0 3rem;
+  width: 3.8rem;
+  flex: 0 0 3.8rem;
   filter: drop-shadow(0 0.25rem 0.5rem var(--effect-brand-seal-shadow));
 }
 
@@ -63,7 +63,7 @@ defineProps({
 
 .brand-mark__copy {
   display: grid;
-  gap: 0.05rem;
+  gap: .35rem;
 }
 
 .brand-mark__name {
@@ -83,8 +83,8 @@ defineProps({
 }
 
 .brand-mark--compact .brand-mark__seal {
-  width: 2.25rem;
-  flex-basis: 2.25rem;
+  width: 2.8rem;
+  flex-basis: 2.8rem;
 }
 
 .brand-mark--compact .brand-mark__name {
@@ -94,8 +94,8 @@ defineProps({
 @media (max-width: 26rem) {
   .brand-mark:not(.brand-mark--compact) { gap: var(--space-xs); }
   .brand-mark:not(.brand-mark--compact) .brand-mark__seal {
-    width: 2.5rem;
-    flex-basis: 2.5rem;
+    width: 3.2rem;
+    flex-basis: 3.2rem;
   }
   .brand-mark:not(.brand-mark--compact) .brand-mark__name { font-size: var(--font-size-lg); }
   .brand-mark:not(.brand-mark--compact) .brand-mark__descriptor { display: none; }

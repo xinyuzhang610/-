@@ -33,6 +33,7 @@ const revealUnavailable = ref(false)
       <InkLandscape :parallax="!animationSkipped" class="hero__ink" />
       <KnowledgeCore class="hero__core" />
     </div>
+    <div class="hero__veil" />
     <HeroScratchReveal
       :skipped="animationSkipped"
       @first-reveal="hasRevealed = true"
@@ -57,23 +58,25 @@ const revealUnavailable = ref(false)
 </template>
 
 <style scoped>
-.hero { position: relative; min-height: max(46rem, 100svh); overflow: hidden; isolation: isolate; background: var(--ink-950); color: var(--moon-50); }
+.hero { position: relative; min-height: 100svh; overflow: hidden; isolation: isolate; background: #0a1a18; color: var(--moon-50); }
 .hero__art { position: absolute; z-index: 0; inset: 0; min-height: 46rem; }
-.hero__art--fallback { background: radial-gradient(circle at 76% 42%, rgb(66 185 154 / 18%), transparent 28%), linear-gradient(135deg, #07110e, #17271f); }
-.hero__art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgb(5 15 12 / 90%) 0%, rgb(7 18 14 / 58%) 42%, rgb(7 18 14 / 8%) 72%), linear-gradient(0deg, rgb(5 14 11 / 72%), transparent 34%); }
+.hero__art--fallback { background: radial-gradient(ellipse 55% 45% at 55% 50%, rgb(20 160 140 / 60%), rgb(20 160 140 / 15%) 65%, transparent), radial-gradient(circle at 76% 42%, rgb(80 200 180 / 10%), transparent 28%), linear-gradient(135deg, #051210, #0e2420); }
 .hero__art > img { width: 100%; height: 100%; object-fit: cover; opacity: .96; filter: saturate(1.06) contrast(1.05) brightness(1.04); }
+.hero__veil { position: absolute; z-index: 1; inset: 0; background: radial-gradient(ellipse 80% 70% at 50% 50%, rgb(40 200 180 / 55%), transparent 80%); mix-blend-mode: screen; pointer-events: none; }
 .hero__ink { position: absolute; inset: auto 0 0; min-height: 36%; opacity: .2; mix-blend-mode: screen; }
 .hero__core { position: absolute; z-index: 1; top: 50%; right: clamp(-8rem, 3vw, 4rem); width: min(49vw, 42rem); transform: translateY(-50%); opacity: .75; }
-.hero__content { position: relative; z-index: 2; display: flex; min-height: max(46rem, 100svh); flex-direction: column; justify-content: center; align-items: flex-start; padding-block: 8rem 5rem; pointer-events: none; }
-.hero__content :is(a, button) { pointer-events: auto; }
-.hero__eyebrow { margin-bottom: 1.5rem; color: var(--gold-200); font-size: .78rem; letter-spacing: .28em; }
-h1 { max-width: 9.5em; font-family: var(--font-title); font-size: clamp(3rem, 7.5vw, 7rem); font-weight: 600; letter-spacing: -.055em; line-height: .98; text-wrap: balance; }
+.hero__content { position: relative; z-index: 2; display: flex; min-height: 100svh; flex-direction: column; justify-content: flex-start; align-items: flex-start; padding: 13rem 0 3rem; pointer-events: none; }
+.hero__actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: auto; }
+.hero__reveal-hint { margin-top: .75rem; color: rgb(248 250 245 / 56%); font-size: .72rem; letter-spacing: .18em; }
+.hero__skip { min-height: 2.75rem; margin-top: .5rem; padding: .25rem .75rem; background: transparent; color: rgb(248 250 245 / 68%); text-decoration: underline; text-underline-offset: .25rem; transition: transform .3s var(--ease-out), color .3s; }
+.hero__skip:hover { transform: scale(1.08); color: var(--moon-50); }
+.hero__lead { max-width: 36rem; margin-top: 2rem; color: rgb(248 250 245 / 80%); font-family: 'Ma Shan Zheng', cursive; font-size: clamp(1.1rem, 1.6vw, 1.35rem); }
+.hero__content :is(a, button, h1, p) { pointer-events: auto; }
+.hero__eyebrow { margin-bottom: 1.5rem; font-family: 'Ma Shan Zheng', cursive; font-size: 1.35rem; letter-spacing: .1em; background: linear-gradient(135deg, var(--gold-200) 0%, var(--gold-400) 40%, var(--gold-600) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-shadow: 0 0 40px rgb(213 166 79 / 30%); }
+h1 { max-width: 9.5em; font-family: var(--font-title); font-size: clamp(2.4rem, 5.5vw, 4.8rem); font-weight: 600; letter-spacing: -.04em; line-height: 1.08; text-wrap: balance; transition: transform .4s var(--ease-out), text-shadow .4s; cursor: default; }
+h1:hover { transform: scale(1.05); text-shadow: 0 0 40px rgb(255 255 255 / 15%); }
 h1 em { color: var(--jade-200); font-style: normal; }
-.hero__lead { max-width: 36rem; margin-top: 2rem; color: rgb(248 250 245 / 80%); font-size: clamp(1rem, 1.5vw, 1.2rem); }
-.hero__actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2rem; }
-.hero__reveal-hint { margin-top: 1rem; color: rgb(248 250 245 / 56%); font-size: .72rem; letter-spacing: .18em; }
-.hero__skip { min-height: 2.75rem; margin-top: 1rem; padding: .25rem .75rem; background: transparent; color: rgb(248 250 245 / 68%); text-decoration: underline; text-underline-offset: .25rem; }
 .hero--still .hero__core { display: none; }
-@media (max-width: 700px) { .hero__art::after { background: linear-gradient(0deg, var(--ink-950) 8%, rgb(10 20 17 / 64%) 75%); } .hero__core { top: 28%; right: -6rem; width: 22rem; } .hero__content { justify-content: flex-end; } }
+@media (max-width: 700px) { .hero__veil { background: radial-gradient(ellipse 120% 80% at 50% 50%, rgb(20 170 150 / 30%), rgb(20 170 150 / 30%) 70%, transparent 100%); } .hero__core { top: 28%; right: -6rem; width: 22rem; } .hero__content { justify-content: flex-end; } }
 @media (prefers-reduced-motion: reduce) { .hero__core { display: none; } }
 </style>

@@ -27,10 +27,14 @@ let staticModeSent = false
 function paintMask() {
   if (!context || !width || !height) return
   context.globalCompositeOperation = 'source-over'
-  const wash = context.createLinearGradient(0, 0, width, height)
-  wash.addColorStop(0, 'rgb(3 17 13)')
-  wash.addColorStop(.48, 'rgb(8 26 20)')
-  wash.addColorStop(1, 'rgb(24 40 31)')
+  const cx = width / 2
+  const cy = height / 2
+  const r = Math.sqrt(cx * cx + cy * cy)
+  const wash = context.createRadialGradient(cx, cy, r * .2, cx, cy, r)
+  wash.addColorStop(0, 'rgb(20 110 100 / 70%)')
+  wash.addColorStop(.35, 'rgb(20 110 100 / 80%)')
+  wash.addColorStop(.6, 'rgb(20 110 100 / 30%)')
+  wash.addColorStop(1, 'rgb(20 110 100 / 10%)')
   context.fillStyle = wash
   context.fillRect(0, 0, width, height)
 }
