@@ -1,0 +1,85 @@
+/* ============================================
+   Element Plus 主题覆写 — 东方未来主义配色
+   仅在 .visual-theme 作用域内生效，
+   避免污染登录、注册、教师后台等业务页面。
+   ============================================ */
+
+/* 语义色变量覆盖 — 安全，不影响组件渲染 */
+:root {
+  /* 主色：蓝色 → 翡翠绿 */
+  --el-color-primary: var(--color-jade);
+  --el-color-primary-light-3: var(--jade-400);
+  --el-color-primary-light-5: var(--jade-200);
+  --el-color-primary-light-7: #c8ece2;
+  --el-color-primary-light-8: #ddf3ec;
+  --el-color-primary-light-9: #eef9f5;
+  --el-color-primary-dark-2: #105446;
+
+  /* 语义色 */
+  --el-color-success: var(--color-success);
+  --el-color-warning: var(--color-warning);
+  --el-color-danger: var(--color-danger);
+  --el-color-info: var(--ink-600);
+}
+
+/* ===== 首页视觉主题作用域 ===== */
+/* 仅在 .visual-theme 容器内生效的组件样式覆盖 */
+.visual-theme .el-step__title.is-process {
+  color: var(--jade-400) !important;
+}
+.visual-theme .el-step__title.is-finish {
+  color: var(--jade-200) !important;
+}
+.visual-theme .el-step__head.is-finish .el-step__icon {
+  background: var(--jade-700);
+  border-color: var(--jade-700);
+}
+
+/* 输入框聚焦光环 */
+.visual-theme .el-input__wrapper:focus-within {
+  box-shadow: 0 0 0 1px var(--jade-400) inset !important;
+}
+.visual-theme .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--color-border) inset;
+}
+
+/* 卡片 */
+.visual-theme .el-card {
+  background: var(--material-panel-dark);
+  border-color: var(--color-border);
+  color: var(--moon-50);
+}
+
+/* 下拉菜单 */
+.visual-theme .el-popper.is-light {
+  background: var(--ink-900);
+  border-color: var(--color-border);
+}
+.visual-theme .el-select-dropdown__item {
+  color: var(--moon-200);
+}
+.visual-theme .el-select-dropdown__item:hover {
+  background: rgb(66 185 154 / 12%);
+}
+.visual-theme .el-select-dropdown__item.selected {
+  color: var(--jade-400);
+}
+
+/* Loading / Skeleton */
+.visual-theme .el-loading-mask {
+  background-color: rgb(16 25 22 / 82%);
+}
+
+/* 对话框 */
+.visual-theme .el-dialog {
+  background: var(--ink-900);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+}
+
+/* 标签 */
+.visual-theme .el-tag {
+  --el-tag-bg-color: rgb(66 185 154 / 12%);
+  --el-tag-border-color: rgb(66 185 154 / 28%);
+  --el-tag-text-color: var(--jade-200);
+}

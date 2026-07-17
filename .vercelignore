@@ -1,0 +1,38 @@
+# Dependencies (installed during build)
+node_modules/
+source/frontend/node_modules/
+source/backend/venv/
+.venv/
+
+# Git
+.git/
+.gitignore
+
+# Tests & coverage
+coverage/
+.pytest_cache/
+source/frontend/dist/
+
+# Docs & design (not needed for deployment)
+docs/
+.github/
+openspec/
+.agents/
+
+# IDE & editor
+.vscode/
+.idea/
+.codex/
+.mimocode/
+
+# Logs
+*.log
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS
+.DS_Store
+Thumbs.db
