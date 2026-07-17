@@ -39,7 +39,7 @@ def _request_error(response: httpx.Response) -> DeepSeekRequestError:
         message = f"{message}（{detail[:240]}）"
     return DeepSeekRequestError(message, status_code)
 
-async def chat_with_deepseek(message: str, system_prompt: str = None) -> str:
+async def chat_with_deepseek(message: str, system_prompt: str = None, history: list[dict] | None = None) -> str:
     if settings.AI_PROVIDER == "mock":
         return mock_reply(message, system_prompt)
     if not settings.DEEPSEEK_API_KEY or settings.DEEPSEEK_API_KEY == "your_api_key_here":
@@ -53,6 +53,8 @@ async def chat_with_deepseek(message: str, system_prompt: str = None) -> str:
     messages = []
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
+    for h in (history or []):
+        messages.append({"role": h["role"], "content": h["content"]})
     messages.append({"role": "user", "content": message})
 
     payload = {

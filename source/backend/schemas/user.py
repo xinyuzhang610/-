@@ -43,6 +43,7 @@ class LoginRequest(BaseModel):
     username: str
     password: str
     captcha_token: Optional[str] = None
+    expected_role: Optional[str] = None
 
 
 class PasswordChangeRequest(BaseModel):

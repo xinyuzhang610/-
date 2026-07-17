@@ -12,6 +12,7 @@ from api.recommend import router as recommend_router
 from api.plaza import router as plaza_router
 from api.favorite import router as favorite_router
 from api.admin import router as admin_router
+from api.meta import router as meta_router
 from sqlalchemy import text
 from models.database import SessionLocal
 
@@ -40,6 +41,7 @@ app.include_router(recommend_router, prefix="/api/recommend", tags=["recommend"]
 app.include_router(plaza_router, prefix="/api/plaza", tags=["plaza"])
 app.include_router(favorite_router, prefix="/api/favorites", tags=["favorites"])
 app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
+app.include_router(meta_router, prefix="/api/meta", tags=["meta"])
 
 @app.get("/")
 async def root(): return {"message": "智教通 API 服务运行中"}

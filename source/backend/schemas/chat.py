@@ -1,10 +1,11 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Literal
 
 class ChatRequest(BaseModel):
     message: str
     tool_id: Optional[int] = None
     session_id: Optional[str] = None
+    usage_mode: Literal["student_use", "teacher_preview"] = "student_use"
 
 class ChatResponse(BaseModel):
     reply: str

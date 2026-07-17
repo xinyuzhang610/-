@@ -13,9 +13,19 @@ from models.usage import UsageLog
 from models.user import User
 from schemas.chat import ChatRequest, ChatResponse
 from services.deepseek import AIConfigurationError, DeepSeekRequestError, chat_with_deepseek, stream_with_deepseek
-from services.tool_access_service import assert_tool_can_be_used
+from services.tool_access_service import assert_tool_can_be_used, can_manage_tool
 
 router = APIRouter()
+
+def _can_chat(user: User, tool: Tool | None) -> bool:
+    """Students can use published tools; teachers can preview own/preset tools; admins can diagnose all."""
+    if user.role == "student":
+        return True
+    if user.role == "admin":
+        return True
+    if tool is None:
+        return False
+    return tool.is_preset or can_manage_tool(user, tool)
 
 def _session(db, user_id, requested, tool_id):
     if requested:
@@ -34,23 +44,65 @@ def _history(db, session_id):
     rows = db.query(ConversationMessage).filter(ConversationMessage.session_id == session_id).order_by(ConversationMessage.created_at.desc()).limit(12).all()
     return [{"role": row.role, "content": row.content} for row in reversed(rows)]
 
-def _complete(db, user, session, tool, message, reply, started):
-    db.add_all([ConversationMessage(session_id=session.id, role="user", content=message), ConversationMessage(session_id=session.id, role="assistant", content=reply), UsageLog(user_id=user.id, tool_id=tool.id if tool else None, input_text=message, output_text=reply, session_id=session.id, status="completed", latency_ms=int((time.perf_counter() - started) * 1000), completed_at=datetime.utcnow())])
-    if tool: tool.usage_count += 1
-    session.last_activity_at = datetime.utcnow(); db.commit()
+def _complete(db, user, session, tool, message, reply, started, usage_mode: str = "student_use"):
+    is_student = usage_mode == "student_use"
+    db.add_all([
+        ConversationMessage(session_id=session.id, role="user", content=message),
+        ConversationMessage(session_id=session.id, role="assistant", content=reply),
+        UsageLog(
+            user_id=user.id,
+            tool_id=tool.id if tool else None,
+            input_text=message,
+            output_text=reply,
+            session_id=session.id,
+            status="completed" if is_student else "preview",
+            latency_ms=int((time.perf_counter() - started) * 1000),
+            completed_at=datetime.utcnow(),
+        ),
+    ])
+    if tool and is_student:
+        tool.usage_count += 1
+    session.last_activity_at = datetime.utcnow()
+    db.commit()
 
 @router.post("/", response_model=ChatResponse)
-async def chat(payload: ChatRequest, db: Session = Depends(get_db), user: User = Depends(require_roles("student"))):
-    tool = _tool(db, user, payload.tool_id); session = _session(db, user.id, payload.session_id, payload.tool_id); started = time.perf_counter()
-    try: reply = await chat_with_deepseek(payload.message, tool.prompt_template if tool else None)
+async def chat(payload: ChatRequest, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    tool = _tool(db, user, payload.tool_id)
+    if not _can_chat(user, tool):
+        raise HTTPException(status_code=403, detail="无权使用该工具。学生可使用广场工具，教师可预览自己创建的工具。")
+    session = _session(db, user.id, payload.session_id, payload.tool_id); started = time.perf_counter()
+    try:
+        history = _history(db, session.id)
+        reply = await chat_with_deepseek(payload.message, tool.prompt_template if tool else None, history)
     except AIConfigurationError as error: raise HTTPException(status_code=503, detail=str(error))
     except DeepSeekRequestError as error: raise HTTPException(status_code=error.status_code, detail=str(error))
-    _complete(db, user, session, tool, payload.message, reply, started)
+    _complete(db, user, session, tool, payload.message, reply, started, payload.usage_mode)
     return ChatResponse(reply=reply, session_id=session.id, tool_name=tool.name if tool else None)
 
+@router.get("/sessions")
+def list_sessions(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    rows = db.query(ConversationSession).filter(ConversationSession.user_id == user.id).order_by(ConversationSession.last_activity_at.desc()).limit(50).all()
+    return [{"id": row.id, "tool_id": row.tool_id, "created_at": row.created_at, "last_activity_at": row.last_activity_at} for row in rows]
+
+@router.get("/sessions/{session_id}/messages")
+def get_session_messages(session_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    session = db.query(ConversationSession).filter(ConversationSession.id == session_id, ConversationSession.user_id == user.id).first()
+    if not session: raise HTTPException(status_code=404, detail="会话不存在")
+    messages = db.query(ConversationMessage).filter(ConversationMessage.session_id == session_id).order_by(ConversationMessage.created_at).all()
+    return {"session_id": session_id, "tool_id": session.tool_id, "messages": [{"id": m.id, "role": m.role, "content": m.content, "created_at": m.created_at} for m in messages]}
+
+@router.delete("/sessions/{session_id}", status_code=204)
+def delete_session(session_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    session = db.query(ConversationSession).filter(ConversationSession.id == session_id, ConversationSession.user_id == user.id).first()
+    if not session: raise HTTPException(status_code=404, detail="会话不存在")
+    db.query(ConversationMessage).filter(ConversationMessage.session_id == session_id).delete()
+    db.delete(session); db.commit()
+
 @router.post("/stream")
-async def stream_chat(payload: ChatRequest, request: Request, db: Session = Depends(get_db), user: User = Depends(require_roles("student"))):
+async def stream_chat(payload: ChatRequest, request: Request, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     tool = _tool(db, user, payload.tool_id)
+    if not _can_chat(user, tool):
+        raise HTTPException(status_code=403, detail="无权使用该工具。学生可使用广场工具，教师可预览自己创建的工具。")
     session = _session(db, user.id, payload.session_id, payload.tool_id)
     # FastAPI closes request-scoped dependencies before a StreamingResponse is
     # consumed. Capture all metadata while this request session is still open,
@@ -60,11 +112,13 @@ async def stream_chat(payload: ChatRequest, request: Request, db: Session = Depe
     tool_id = tool.id if tool else None
     tool_name = tool.name if tool else None
     system_prompt = tool.prompt_template if tool else None
+    usage_mode = payload.usage_mode
     db.commit()
 
     async def events():
         stream_db = SessionLocal()
         reply = ""; started = time.perf_counter()
+        is_student = usage_mode == "student_use"
         try:
             stream_session = stream_db.get(ConversationSession, session_id)
             stream_user = stream_db.get(User, user_id)
@@ -76,7 +130,7 @@ async def stream_chat(payload: ChatRequest, request: Request, db: Session = Depe
                 if await request.is_disconnected():
                     stream_db.add(UsageLog(user_id=user_id, tool_id=tool_id, input_text=payload.message, session_id=session_id, status="aborted")); stream_db.commit(); return
                 reply += delta; yield f"event: delta\ndata: {json.dumps({'text': delta}, ensure_ascii=False)}\n\n"
-            _complete(stream_db, stream_user, stream_session, stream_tool, payload.message, reply, started)
+            _complete(stream_db, stream_user, stream_session, stream_tool, payload.message, reply, started, usage_mode)
             yield f"event: done\ndata: {json.dumps({'session_id': session_id})}\n\n"
         except (AIConfigurationError, DeepSeekRequestError) as error:
             stream_db.add(UsageLog(user_id=user_id, tool_id=tool_id, input_text=payload.message, session_id=session_id, status="aborted")); stream_db.commit()

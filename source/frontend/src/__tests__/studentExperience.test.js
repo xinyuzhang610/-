@@ -69,7 +69,7 @@ describe('student knowledge journey', () => {
   })
 
   it('derives labeled record metrics from the real usage response', async () => {
-    usageRequest.mockResolvedValue({ data: [{ id: 1, tool_id: 7, input_text: '勾股定理', output_text: '回答', created_at: '2026-07-14T08:00:00Z' }] })
+    usageRequest.mockResolvedValue({ data: { items: [{ id: 1, tool_id: 7, input_text: '勾股定理', output_text: '回答', created_at: '2026-07-14T08:00:00Z' }] } })
     const wrapper = await mountAt(Records, '/student/records')
     await flushPromises()
     expect(wrapper.text()).toContain('使用次数')

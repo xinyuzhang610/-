@@ -58,6 +58,9 @@ async def login(request: LoginRequest, http_request: Request, db: Session = Depe
         write_audit(db, "login", "user", result="failed", details={"username": request.username})
         db.commit()
         raise HTTPException(status_code=401, detail="用户名或密码错误")
+    if request.expected_role and request.expected_role != user.role:
+        role_label = "教师" if request.expected_role == "teacher" else "学生"
+        raise HTTPException(status_code=403, detail=f"该账号不是{role_label}账号，请切换到{'教师' if user.role == 'teacher' else '学生'}登录入口")
     if not user.is_active:
         write_audit(db, "login", "user", user.id, actor_id=user.id, result="failed", details={"reason": "disabled"})
         db.commit()

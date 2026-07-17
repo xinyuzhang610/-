@@ -22,8 +22,8 @@ async function load() {
       return
     }
     if (route.query.subject && !search.value.trim()) {
-      const { data } = await getRecommendedTools(route.query.subject, route.query.difficulty || route.query.approach || '兴趣激发')
-      tools.value = data.items || []
+      const { data } = await getRecommendedTools(category.value, route.query.subject, route.query.difficulty || route.query.approach || '兴趣激发')
+      tools.value = data.tools || []
       categories.value = [{ value: '文科', label: '文科' }, { value: '理科', label: '理科' }, { value: '通用', label: '通用' }]
       hotTools.value = tools.value.slice(0, 3)
       recommendation.value = `根据“${route.query.difficulty || '当前困惑'} · ${route.query.subject} · ${route.query.approach || '学习方式'}”为你匹配`

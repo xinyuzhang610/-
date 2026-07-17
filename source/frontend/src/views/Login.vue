@@ -42,7 +42,7 @@ async function handleLogin() {
   loading.value = true
   errorMessage.value = ''
   try {
-    const response = await loginRequest({ username: form.username, password: form.password })
+    const response = await loginRequest({ username: form.username, password: form.password, expected_role: selectedRole.value })
     const payload = response.data
     userStore.login(payload)
     const fallback = payload.user?.role === 'student' ? '/student/guidance' : '/teacher/home'

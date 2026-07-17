@@ -68,7 +68,7 @@ const qrImage = ref('')
 watch(shareInfo, async (share) => { qrImage.value = share ? await QRCode.toDataURL(share.share_url, { width: 220, margin: 1 }) : '' })
 
 function resetForm() { Object.assign(form, emptyForm()); editingId.value = null }
-function normalizeTool(tool) { return { ...tool, externalUrl: tool.interface_config?.external_url || '' } }
+function normalizeTool(tool) { return { ...tool, externalUrl: tool.external_platform_url || tool.interface_config?.external_url || '' } }
 async function loadTools() {
   loading.value = true; errorMessage.value = ''
   try {
@@ -81,12 +81,12 @@ async function loadTools() {
   finally { loading.value = false }
 }
 function copyTemplate(template) {
-  Object.assign(form, { name: `${template.name}（副本）`, description: template.description || '', category: template.category || '通用', subject: template.subject || '', prompt_template: template.prompt_template || '', externalUrl: template.default_config?.external_url || template.interface_config?.external_url || '', is_public: true })
+  Object.assign(form, { name: `${template.name}（副本）`, description: template.description || '', category: template.category || '通用', subject: template.subject || '', prompt_template: template.prompt_template || '', externalUrl: template.external_platform_url || template.default_config?.external_url || template.interface_config?.external_url || '', is_public: true })
   editingId.value = null
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 function editTool(tool) { Object.assign(form, normalizeTool(tool)); editingId.value = tool.id; window.scrollTo({ top: 0, behavior: 'smooth' }) }
-function payload() { return { name: form.name, description: form.description || null, category: form.category, subject: form.subject || null, prompt_template: form.prompt_template, interface_config: form.externalUrl ? { external_url: form.externalUrl } : null, is_public: form.is_public } }
+function payload() { return { name: form.name, description: form.description || null, category: form.category, subject: form.subject || null, prompt_template: form.prompt_template, interface_config: form.externalUrl ? { external_url: form.externalUrl } : null, external_platform_url: form.externalUrl || null, is_public: form.is_public } }
 async function saveTool() {
   saving.value = true; notice.value = ''
   try {

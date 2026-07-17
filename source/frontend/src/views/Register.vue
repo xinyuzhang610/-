@@ -32,7 +32,7 @@ import IdentitySwitch from '../components/auth/IdentitySwitch.vue'
 import AppButton from '../components/ui/AppButton.vue'
 
 const route = useRoute(); const router = useRouter(); const selectedRole = ref(route.query.role === 'student' ? 'student' : 'teacher'); const loading = ref(false); const errorMessage = ref('')
-const subjects = ['语文', '数学', '英语', '物理', '化学', '生物', '历史', '地理', '政治', '信息技术']; const grades = ['初一', '初二', '初三', '高一', '高二', '高三']
+const subjects = ['语文', '数学', '英语', '物理', '化学', '生物', '历史', '地理', '政治', '信息技术', '通用']; const grades = ['初一', '初二', '初三', '高一', '高二', '高三']
 const form = reactive({ username: '', password: '', confirmPassword: '', name: '', school: '', subject: '', grade: '' })
 watch(selectedRole, () => { errorMessage.value = '' })
 async function handleRegister() {

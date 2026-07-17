@@ -17,7 +17,7 @@ def visible(db):
 def get_plaza(category: str | None = None, search: str | None = None, sort: str = Query("hot", pattern="^(hot|latest)$"), page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100), db: Session = Depends(get_db)):
     query = visible(db)
     if category: query = query.filter(Tool.category == category)
-    if search: query = query.filter(or_(Tool.name.contains(search), Tool.description.contains(search)))
+    if search: query = query.filter(or_(Tool.name.ilike(f"%{search}%"), Tool.description.ilike(f"%{search}%")))
     query = query.order_by(Tool.created_at.desc() if sort == "latest" else Tool.usage_count.desc())
     total = query.count(); items = [public_tool_payload(tool) for tool in query.offset((page - 1) * page_size).limit(page_size).all()]
     hot_tools = [public_tool_payload(tool) for tool in visible(db).order_by(Tool.usage_count.desc()).limit(5).all()]

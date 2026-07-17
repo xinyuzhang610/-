@@ -40,7 +40,7 @@ describe('authentication experience', () => {
     await wrapper.get('#login-password').setValue('secure12')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
-    expect(loginRequest).toHaveBeenCalledWith({ username:'teacher01', password:'secure12' })
+    expect(loginRequest).toHaveBeenCalledWith({ username:'teacher01', password:'secure12', expected_role:'teacher' })
     expect(router.currentRoute.value.path).toBe('/teacher/home')
     expect(localStorage.getItem('token')).toBe('real-token')
   })

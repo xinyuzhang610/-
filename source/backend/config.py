@@ -27,8 +27,9 @@ class Settings(BaseSettings):
     CAPTCHA_BYPASS: bool = False
     AGENT_PLATFORM_URL: str = ""
     
-    # CORS配置
+    # CORS and frontend configuration
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+    FRONTEND_URL: str = "http://localhost:5173"
     
     class Config:
         env_file = ".env"

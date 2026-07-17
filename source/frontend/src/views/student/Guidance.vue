@@ -4,7 +4,7 @@ import InterestBubble from '../../components/student/InterestBubble.vue'
 
 const layers = [
   { title: '此刻，哪一种阻力最明显？', note: '先辨认学习阻力', options: ['读不懂题', '找不到思路', '难以专注'] },
-  { title: '它出现在哪片知识星域？', note: '再定位学科领域', options: ['语文', '数学', '英语', '物理', '化学', '历史'] },
+  { title: '它出现在哪片知识星域？', note: '再定位学科领域', options: ['语文', '数学', '英语', '物理', '化学', '生物', '历史', '地理', '政治', '信息技术'] },
   { title: '你希望怎样突破？', note: '最后选择学习方式', options: ['概念辨析', '分步推导', '案例启发', '练习巩固'] }
 ]
 const selections = ref(['', '', ''])

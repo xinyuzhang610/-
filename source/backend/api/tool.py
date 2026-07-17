@@ -117,6 +117,7 @@ def get_templates(db: Session = Depends(get_db), current_user: User = Depends(re
 
 @router.post("/", response_model=ToolResponse, status_code=status.HTTP_201_CREATED)
 def create_tool(tool: ToolCreate, db: Session = Depends(get_db), current_user: User = Depends(require_roles("teacher", "admin"))):
+    external_url = tool.interface_config.get("external_url", "") if tool.interface_config else ""
     db_tool = Tool(
         name=tool.name,
         description=tool.description,
@@ -131,6 +132,7 @@ def create_tool(tool: ToolCreate, db: Session = Depends(get_db), current_user: U
         share_enabled=tool.is_public,
         is_public=tool.is_public,
         share_code=_share_code(),
+        external_platform_url=external_url or None,
     )
     db.add(db_tool)
     db.flush()
@@ -222,7 +224,7 @@ def get_share_link(tool_id: int, db: Session = Depends(get_db), current_user: Us
         "share_code": tool.share_code,
         "share_enabled": tool.share_enabled,
         "share_expires_at": tool.share_expires_at,
-        "share_url": f"http://localhost:5173/share/{tool.share_code}",
+        "share_url": f"{settings.FRONTEND_URL}/share/{tool.share_code}",
     }
 
 
@@ -242,7 +244,7 @@ def update_share_settings(
     tool.share_code = tool.share_code or _share_code()
     write_audit(db, "update_share", "tool", tool.id, actor_id=current_user.id, details={"enabled": tool.share_enabled})
     db.commit()
-    return {"share_code": tool.share_code, "share_enabled": tool.share_enabled, "share_expires_at": tool.share_expires_at, "share_url": f"http://localhost:5173/share/{tool.share_code}"}
+    return {"share_code": tool.share_code, "share_enabled": tool.share_enabled, "share_expires_at": tool.share_expires_at, "share_url": f"{settings.FRONTEND_URL}/share/{tool.share_code}"}
 
 
 @router.post("/{tool_id}/share/revoke")

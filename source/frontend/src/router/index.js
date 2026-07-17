@@ -109,7 +109,10 @@ router.beforeEach((to) => {
   if (requiredRole && currentRole && currentRole !== requiredRole && currentRole !== 'admin') {
     return currentRole === 'student' ? '/student/guidance' : '/teacher/home'
   }
-  if (to.path === '/login' && token) return '/teacher/home'
+  if (to.path === '/login' && token) {
+    const role = localStorage.getItem('userRole')
+    return role === 'student' ? '/student/guidance' : '/teacher/home'
+  }
   return true
 })
 

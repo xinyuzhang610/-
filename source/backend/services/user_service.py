@@ -38,7 +38,7 @@ def register_successful_login(user: User, now: datetime | None = None) -> None:
     user.last_login_at = current_time
 
 def create_user(db: Session, user_data: UserCreate):
-    """创建新用户"""
+    """创建新用户（不提交事务，由调用方统一提交）"""
     validate_password_strength(user_data.password)
     hashed_password = hash_password(user_data.password)
     db_user = User(
@@ -51,8 +51,7 @@ def create_user(db: Session, user_data: UserCreate):
         grade=user_data.grade
     )
     db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
+    db.flush()
     return db_user
 
 def authenticate_user(db: Session, username: str, password: str):
