@@ -10,6 +10,8 @@
         <form class="auth-form" @submit.prevent="handleLogin">
           <div class="field"><label for="login-username">用户名</label><input id="login-username" v-model.trim="form.username" autocomplete="username" minlength="3" required placeholder="请输入用户名"></div>
           <div class="field"><label for="login-password">密码</label><input id="login-password" v-model="form.password" autocomplete="current-password" minlength="6" required type="password" placeholder="请输入密码"></div>
+          <TurnstileWidget v-if="turnstileSiteKey" ref="turnstileRef" :site-key="turnstileSiteKey" action="login" @verify="onCaptchaVerify" @expire="onCaptchaExpire" @error="onCaptchaError" />
+          <p v-else class="form-error" role="alert">Turnstile 未配置，请设置 VITE_TURNSTILE_SITE_KEY</p>
           <p v-if="errorMessage" class="form-error" role="alert">{{ errorMessage }}</p>
           <AppButton class="submit-button" type="submit" :variant="selectedRole === 'teacher' ? 'gold' : 'jade'" :loading="loading">登录{{ selectedRole === 'teacher' ? '教师工作台' : '学生学习空间' }}</AppButton>
           <p class="auth-footnote">还没有账号？<RouterLink :to="`/register?role=${selectedRole}`">创建{{ selectedRole === 'teacher' ? '教师' : '学生' }}账号</RouterLink></p>
@@ -27,6 +29,7 @@ import { login as loginRequest } from '../api/auth'
 import AuthScene from '../components/auth/AuthScene.vue'
 import IdentitySwitch from '../components/auth/IdentitySwitch.vue'
 import AppButton from '../components/ui/AppButton.vue'
+import TurnstileWidget from '../components/auth/TurnstileWidget.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -35,20 +38,34 @@ const selectedRole = ref(route.query.role === 'student' ? 'student' : 'teacher')
 const loading = ref(false)
 const errorMessage = ref('')
 const form = reactive({ username: '', password: '' })
+const captchaToken = ref(null)
+const turnstileRef = ref(null)
+
+const turnstileSiteKey = import.meta.env?.VITE_TURNSTILE_SITE_KEY || ''
 
 watch(selectedRole, () => { errorMessage.value = '' })
 
+function onCaptchaVerify(token) { captchaToken.value = token }
+function onCaptchaExpire() { captchaToken.value = null }
+function onCaptchaError() { captchaToken.value = null }
+
 async function handleLogin() {
+  if (!captchaToken.value) {
+    errorMessage.value = '请完成验证码验证'
+    return
+  }
   loading.value = true
   errorMessage.value = ''
   try {
-    const response = await loginRequest({ username: form.username, password: form.password, expected_role: selectedRole.value })
+    const response = await loginRequest({ username: form.username, password: form.password, expected_role: selectedRole.value, captcha_token: captchaToken.value })
     const payload = response.data
     userStore.login(payload)
     const fallback = payload.user?.role === 'student' ? '/student/guidance' : '/teacher/home'
     await router.push(route.query.redirect || fallback)
   } catch (error) {
     errorMessage.value = error.response?.data?.detail || '暂时无法登录，请检查网络或稍后重试。'
+    if (turnstileRef.value) turnstileRef.value.reset()
+    captchaToken.value = null
   } finally {
     loading.value = false
   }
