@@ -22,6 +22,7 @@ class ToolUpdate(BaseModel):
     prompt_template: Optional[str] = None
     interface_config: Optional[dict] = None
     external_platform_url: Optional[str] = None
+    is_public: Optional[bool] = None
     plaza_status: Optional[str] = None
 
 

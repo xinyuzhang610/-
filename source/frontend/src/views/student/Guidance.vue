@@ -32,7 +32,7 @@ const recommendationQuery = computed(() => ({ difficulty: selections.value[0], s
     </header>
 
     <ol class="layer-map" aria-label="兴趣引导三层路径">
-      <li v-for="(layer, index) in layers" :key="layer.title" :class="{ active: current === index, done: selections[index] }">
+      <li v-for="(layer, index) in layers" :key="layer.title" :data-interest-layer="index" :class="{ active: current === index, done: selections[index] }">
         <button type="button" :aria-label="`前往第 ${index + 1} 层：${layer.note}`" :disabled="index > 0 && !selections[index - 1]" @click="current = index">
           <span>0{{ index + 1 }}</span>{{ layer.note }}
         </button>

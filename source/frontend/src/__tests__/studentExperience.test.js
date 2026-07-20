@@ -8,14 +8,24 @@ import Records from '../views/student/Records.vue'
 import ToolUse from '../views/student/ToolUse.vue'
 
 const plazaRequest = vi.fn()
-const chatRequest = vi.fn()
+const streamRequest = vi.fn()
 const toolRequest = vi.fn()
 const usageRequest = vi.fn()
+const statsRequest = vi.fn()
+const sessionListRequest = vi.fn()
+const sessionMessageRequest = vi.fn()
 
 vi.mock('../api/plaza', () => ({ getPlaza: (...args) => plazaRequest(...args) }))
-vi.mock('../api/chat', () => ({ sendChat: (...args) => chatRequest(...args) }))
-vi.mock('../api/tools', () => ({ getTool: (...args) => toolRequest(...args) }))
-vi.mock('../api/usage', () => ({ getMyUsage: (...args) => usageRequest(...args) }))
+vi.mock('../api/recommend', () => ({ getRecommendation: vi.fn() }))
+vi.mock('../api/favorites', () => ({ listFavorites: vi.fn(), addFavorite: vi.fn(), removeFavorite: vi.fn() }))
+vi.mock('../api/chat', () => ({
+  streamChat: (...args) => streamRequest(...args),
+  listSessions: (...args) => sessionListRequest(...args),
+  getSessionMessages: (...args) => sessionMessageRequest(...args),
+  deleteSession: vi.fn(),
+}))
+vi.mock('../api/tools', () => ({ getTool: (...args) => toolRequest(...args), getSharedTool: vi.fn() }))
+vi.mock('../api/usage', () => ({ getMyUsage: (...args) => usageRequest(...args), getStudentStats: (...args) => statsRequest(...args) }))
 
 async function mountAt(component, path) {
   const router = createRouter({
@@ -33,9 +43,15 @@ async function mountAt(component, path) {
 describe('student knowledge journey', () => {
   beforeEach(() => {
     plazaRequest.mockReset()
-    chatRequest.mockReset()
+    streamRequest.mockReset()
     toolRequest.mockReset()
     usageRequest.mockReset()
+    statsRequest.mockReset()
+    sessionListRequest.mockReset()
+    sessionMessageRequest.mockReset()
+    sessionListRequest.mockResolvedValue({ data: [] })
+    sessionMessageRequest.mockResolvedValue({ data: { messages: [] } })
+    statsRequest.mockResolvedValue({ data: { total_interactions: 0, distinct_tools: 0, consecutive_days: 0 } })
     localStorage.clear()
   })
 
@@ -55,11 +71,11 @@ describe('student knowledge journey', () => {
     await wrapper.get('[aria-label="搜索工具"] input').setValue('公式')
     await wrapper.get('[aria-label="理科专区"]').trigger('click')
     await wrapper.get('form').trigger('submit')
-    expect(plazaRequest).toHaveBeenLastCalledWith({ category: '理科', search: '公式' })
+    expect(plazaRequest).toHaveBeenLastCalledWith({ category: '理科', search: '公式', sort: 'hot' })
   })
 
   it('keeps chat input after a failed request and exposes retry', async () => {
-    chatRequest.mockRejectedValue(new Error('timeout'))
+    streamRequest.mockRejectedValue(new Error('timeout'))
     const wrapper = await mountAt(Chat, '/student/chat')
     await wrapper.get('textarea').setValue('请解释勾股定理')
     await wrapper.get('form').trigger('submit')
@@ -75,13 +91,14 @@ describe('student knowledge journey', () => {
     expect(wrapper.text()).toContain('使用次数')
     expect(wrapper.text()).toContain('使用工具数')
     expect(wrapper.text()).toContain('1')
-    expect(usageRequest).toHaveBeenCalledWith()
+    expect(usageRequest).toHaveBeenCalledWith(1, 100)
+    expect(statsRequest).toHaveBeenCalledWith()
   })
 
   it('loads the route tool and sends its numeric ID with chat', async () => {
     localStorage.setItem('token', 'student-session')
     toolRequest.mockResolvedValue({ data: { id: 42, name: '概念辨析器', description: '厘清易混概念', category: '理科', usage_count: 3 } })
-    chatRequest.mockResolvedValue({ data: { reply: '已辨析', session_id: 'session-1', tool_name: '概念辨析器' } })
+    streamRequest.mockResolvedValue(undefined)
     const wrapper = await mountAt(ToolUse, '/tool/42')
     await flushPromises()
     expect(toolRequest).toHaveBeenCalledWith('42')
@@ -89,6 +106,6 @@ describe('student knowledge journey', () => {
     await wrapper.get('textarea').setValue('质量和重量')
     await wrapper.get('form').trigger('submit')
     await flushPromises()
-    expect(chatRequest).toHaveBeenCalledWith(expect.objectContaining({ message: '质量和重量', tool_id: 42 }))
+    expect(streamRequest).toHaveBeenCalledWith(expect.objectContaining({ message: '质量和重量', tool_id: 42, usage_mode: 'student_use' }), expect.any(Object))
   })
 })

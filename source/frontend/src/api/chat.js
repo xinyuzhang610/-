@@ -5,11 +5,22 @@ const client = createApiClient(getApiBaseUrl('/chat'), 15000)
 
 export const sendChat = (payload) => client.post('/', payload)
 
+export const listSessions = () => client.get('/sessions')
+export const getSessionMessages = (sessionId) => client.get(`/sessions/${sessionId}/messages`)
+export const deleteSession = (sessionId) => client.delete(`/sessions/${sessionId}`)
+
 export async function streamChat(payload, { onMeta, onDelta, onDone, onError } = {}) {
   const token = localStorage.getItem('token')
   const streamUrl = getApiBaseUrl('/chat/stream')
   const response = await fetch(streamUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(payload) })
-  if (!response.ok || !response.body) throw new Error(`stream request failed: ${response.status}`)
+  if (!response.ok || !response.body) {
+    let detail = `stream request failed: ${response.status}`
+    try {
+      const payload = await response.json()
+      detail = payload.detail || detail
+    } catch { /* keep the status fallback */ }
+    throw new Error(detail)
+  }
   const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = ''
   while (true) {
     const { value, done } = await reader.read(); if (done) break

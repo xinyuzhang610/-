@@ -159,3 +159,73 @@ def recommend_tools(db: Session, category: str | None, subject: str | None, need
         for t in fallback.order_by(Tool.usage_count.desc()).limit(6).all()
         if is_plaza_visible(t)
     ], None
+
+
+SUBJECT_CATEGORY = {
+    "语文": "文科", "英语": "文科", "历史": "文科", "政治": "文科", "地理": "文科",
+    "数学": "理科", "物理": "理科", "化学": "理科", "生物": "理科", "信息技术": "理科",
+    "通用": "通用",
+}
+
+# Student guidance uses deterministic matching as well. It is intentionally
+# separate from the teacher map because its input is difficulty + approach.
+STUDENT_TOOL_MAP = {
+    ("读不懂题", "概念辨析"): ["概念辨析器", "名词解释器", "阅读理解辅助"],
+    ("读不懂题", "分步推导"): ["公式推导助手", "阅读理解辅助", "实验模拟讲解"],
+    ("读不懂题", "案例启发"): ["古诗词趣味赏析", "实验模拟讲解", "知识卡片生成器"],
+    ("读不懂题", "练习巩固"): ["错题分析器", "英语单词卡片", "逻辑思维训练"],
+    ("找不到思路", "概念辨析"): ["概念辨析器", "名词解释器", "AI学习助手"],
+    ("找不到思路", "分步推导"): ["公式推导助手", "错题分析器", "思维导图助手"],
+    ("找不到思路", "案例启发"): ["作文灵感助手", "古诗词趣味赏析", "实验模拟讲解"],
+    ("找不到思路", "练习巩固"): ["逻辑思维训练", "错题分析器", "知识卡片生成器"],
+    ("难以专注", "概念辨析"): ["知识卡片生成器", "名词解释器", "AI学习助手"],
+    ("难以专注", "分步推导"): ["知识卡片生成器", "逻辑思维训练", "思维导图助手"],
+    ("难以专注", "案例启发"): ["诗词飞花令", "逻辑思维训练", "实验模拟讲解"],
+    ("难以专注", "练习巩固"): ["英语单词卡片", "逻辑思维训练", "知识卡片生成器"],
+}
+
+DIFFICULTY_ALIASES = {"cant_read": "读不懂题", "no_approach": "找不到思路", "cant_focus": "难以专注"}
+APPROACH_ALIASES = {"concept": "概念辨析", "step_by_step": "分步推导", "case_study": "案例启发", "practice": "练习巩固"}
+
+
+def recommend_student_tools(
+    db: Session,
+    difficulty: str | None,
+    subject: str | None,
+    approach: str | None,
+):
+    """Return a deterministic recommendation for the student's three-step flow."""
+    difficulty = DIFFICULTY_ALIASES.get(difficulty, difficulty)
+    approach = APPROACH_ALIASES.get(approach, approach)
+    category = SUBJECT_CATEGORY.get(subject, "通用")
+    names = STUDENT_TOOL_MAP.get((difficulty, approach), [])
+
+    query = db.query(Tool).filter(
+        Tool.is_preset.is_(True),
+        Tool.deleted_at.is_(None),
+        Tool.name.in_(names),
+    )
+    candidates = query.all()
+
+    def score(tool):
+        subject_score = 2 if subject and tool.subject == subject else 0
+        category_score = 1 if tool.category == category else 0
+        general_score = 1 if tool.category == "通用" else 0
+        order = names.index(tool.name) if tool.name in names else 99
+        return (-subject_score, -category_score, -general_score, order)
+
+    ordered = sorted([tool for tool in candidates if is_plaza_visible(tool)], key=score)
+    if not ordered:
+        fallback_names = CATEGORY_NEED_MAP.get((category, "课后辅导"), [])
+        fallback = db.query(Tool).filter(
+            Tool.is_preset.is_(True),
+            Tool.deleted_at.is_(None),
+            Tool.name.in_(fallback_names),
+        ).all()
+        ordered = sorted(
+            [tool for tool in fallback if is_plaza_visible(tool)],
+            key=lambda tool: fallback_names.index(tool.name) if tool.name in fallback_names else 99,
+        )
+
+    reason = f"根据“{difficulty or '当前学习阻力'} · {subject or '通用学科'} · {approach or '学习方式'}”进行规则匹配"
+    return [public_tool_payload(tool) for tool in ordered[:6]], reason

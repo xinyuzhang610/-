@@ -1,23 +1,63 @@
 <script setup>
-import { nextTick, ref } from 'vue'
-import { sendChat } from '../../api/chat'
+import { nextTick, onMounted, ref } from 'vue'
+import { streamChat, listSessions, getSessionMessages, deleteSession } from '../../api/chat'
 import VintageRibbonTitle from '../../components/vintage/VintageRibbonTitle.vue'
 import VintageOrnament from '../../components/vintage/VintageOrnament.vue'
 
 const input = ref(''), pending = ref(false), error = ref(''), sessionId = ref(''), feed = ref(null)
 const messages = ref([{ id: 'welcome', role: 'assistant', content: '把你正在卡住的问题写下来。我们会从已知条件出发，一步一步找到突破口。' }])
-const lastFailed = ref('')
+const sessions = ref([]), lastFailed = ref('')
 const scroll = () => nextTick(() => { if (feed.value) feed.value.scrollTop = feed.value.scrollHeight })
+async function loadSessions() {
+  try { const { data } = await listSessions(); sessions.value = data || [] } catch { sessions.value = [] }
+}
+async function openSession(id) {
+  if (pending.value) return
+  try {
+    const { data } = await getSessionMessages(id)
+    sessionId.value = id
+    messages.value = (data.messages || []).map(item => ({ id: item.id, role: item.role, content: item.content }))
+    if (!messages.value.length) messages.value = [{ id: `welcome-${id}`, role: 'assistant', content: '这是一段尚未开始的学习对话。' }]
+    scroll()
+  } catch (cause) { error.value = cause?.response?.data?.detail || '会话读取失败。' }
+}
+function newSession() {
+  if (pending.value) return
+  sessionId.value = ''
+  messages.value = [{ id: `welcome-${Date.now()}`, role: 'assistant', content: '新会话已准备好。把你正在卡住的问题写下来。' }]
+  error.value = ''
+}
+async function removeCurrentSession() {
+  if (!sessionId.value || !window.confirm('确认删除当前会话及其中的学习记录吗？')) return
+  try { await deleteSession(sessionId.value); newSession(); await loadSessions() }
+  catch (cause) { error.value = cause?.response?.data?.detail || '会话删除失败。' }
+}
 async function submit(text = input.value) {
   const question = text.trim(); if (!question || pending.value) return
   pending.value = true; error.value = ''; lastFailed.value = question
+  const userMessage = { id: `u-${Date.now()}`, role: 'user', content: question }
+  const assistantMessage = { id: `a-${Date.now()}`, role: 'assistant', content: '' }
+  messages.value.push(userMessage, assistantMessage); input.value = ''; scroll()
+  let streamFailure = ''
   try {
-    const { data } = await sendChat({ message: question, session_id: sessionId.value || undefined })
-    messages.value.push({ id: `u-${Date.now()}`, role: 'user', content: question }, { id: `a-${Date.now()}`, role: 'assistant', content: data.reply })
-    sessionId.value = data.session_id; input.value = ''; lastFailed.value = ''; scroll()
-  } catch (cause) { error.value = cause?.response?.data?.detail || '回答生成超时，问题仍保留在输入框中。'; input.value = question }
-  finally { pending.value = false }
+    await streamChat(
+      { message: question, session_id: sessionId.value || undefined },
+      {
+        onMeta: data => { sessionId.value = data.session_id || sessionId.value; scroll() },
+        onDelta: data => { assistantMessage.content += data.text || ''; scroll() },
+        onError: data => { streamFailure = data.message || '流式回答失败。' },
+        onDone: async () => { await loadSessions(); scroll() },
+      },
+    )
+    if (streamFailure) throw new Error(streamFailure)
+    lastFailed.value = ''
+  } catch (cause) {
+    error.value = cause?.message || '回答生成超时，问题仍保留在输入框中。'
+    input.value = question
+    if (!assistantMessage.content) messages.value = messages.value.filter(item => item !== assistantMessage)
+  } finally { pending.value = false }
 }
+onMounted(loadSessions)
 </script>
 
 <template>
@@ -27,10 +67,21 @@ async function submit(text = input.value) {
       <p class="eyebrow">AI LEARNING COMPANION</p>
       <h1>让问题显形</h1>
       <p>它不会替你跳过思考，而会帮助你看见条件、关系与下一步。</p>
+      <div class="session-tools">
+        <button type="button" @click="newSession">＋ 新建会话</button>
+        <button type="button" :disabled="!sessionId" @click="removeCurrentSession">删除当前</button>
+      </div>
       <dl>
         <div><dt>当前会话</dt><dd>{{ sessionId || '尚未建立' }}</dd></div>
         <div><dt>对话原则</dt><dd>先理解，再推导</dd></div>
       </dl>
+      <div class="session-list">
+        <h2>最近会话</h2>
+        <button v-for="session in sessions" :key="session.id" type="button" :class="{ active: session.id === sessionId }" @click="openSession(session.id)">
+          {{ new Date(session.last_activity_at || session.created_at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }}
+        </button>
+        <p v-if="!sessions.length">完成一次提问后，这里会保留会话入口。</p>
+      </div>
     </aside>
 
     <section class="chat-panel" aria-labelledby="chat-title">
@@ -411,5 +462,65 @@ dd {
 
 @media (prefers-reduced-motion: reduce) {
   .dots { animation: none; }
+}
+
+.session-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 26px;
+}
+
+.session-tools button,
+.session-list button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(139, 111, 71, 0.28);
+  border-radius: 2px;
+  background: transparent;
+  color: #6b5d3e;
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.session-tools button:first-child {
+  border-color: rgba(184, 161, 110, 0.7);
+  color: #8b6f47;
+}
+
+.session-tools button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.session-list {
+  position: relative;
+  z-index: 1;
+  margin-top: 34px;
+}
+
+.session-list h2 {
+  margin-bottom: 10px;
+  color: #6b5d3e;
+  font: 500 1rem var(--font-display);
+}
+
+.session-list button {
+  display: block;
+  width: 100%;
+  margin-top: 7px;
+  text-align: left;
+}
+
+.session-list button.active {
+  border-color: #8a9a8c;
+  background: rgba(138, 154, 140, 0.12);
+}
+
+.session-list p {
+  color: #8b7e60;
+  font-size: 0.75rem;
+  line-height: 1.6;
 }
 </style>

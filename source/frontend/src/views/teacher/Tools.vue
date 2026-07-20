@@ -61,7 +61,10 @@
         <h2 id="share-title">邀请学生使用</h2>
         <img :src="qrImage" alt="工具分享二维码">
         <input :value="shareInfo.share_url" readonly @focus="$event.target.select()">
-        <VintageButton variant="primary" type="button" @click="copyShare">复制分享链接</VintageButton>
+        <label class="share-setting"><input v-model="shareEnabled" type="checkbox">允许学生通过分享链接访问</label>
+        <label class="share-setting">过期时间<input v-model="shareExpiresAt" type="datetime-local"></label>
+        <VintageButton variant="primary" type="button" :disabled="shareSaving" @click="saveShareSettings">{{ shareSaving ? '保存中…' : '保存分享设置' }}</VintageButton>
+        <button class="secondary" type="button" @click="copyShare">复制分享链接</button>
       </section>
     </div>
     <p v-if="notice" class="notice" role="status">{{ notice }}</p>
@@ -76,10 +79,10 @@ import VintageButton from '../../components/vintage/VintageButton.vue'
 import VintageDivider from '../../components/vintage/VintageDivider.vue'
 import VintagePostmark from '../../components/vintage/VintagePostmark.vue'
 import VintageRibbonTitle from '../../components/vintage/VintageRibbonTitle.vue'
-import { createTool, deleteTool, getMyTools, getPresetTools, getShareLink, getTemplates, revokeShare, updateTool } from '../../api/tools'
+import { createTool, deleteTool, getMyTools, getPresetTools, getShareLink, getTemplates, revokeShare, updateShareSettings, updateTool } from '../../api/tools'
 import { useDemoMode } from '../../composables/useDemoMode'
 
-const presets = ref([]), myTools = ref([]), templates = ref([]), loading = ref(true), saving = ref(false), errorMessage = ref(''), notice = ref(''), editingId = ref(null), shareInfo = ref(null)
+const presets = ref([]), myTools = ref([]), templates = ref([]), loading = ref(true), saving = ref(false), errorMessage = ref(''), notice = ref(''), editingId = ref(null), shareInfo = ref(null), shareEnabled = ref(false), shareExpiresAt = ref(''), shareSaving = ref(false)
 const platformUrl = import.meta.env.VITE_AGENT_PLATFORM_URL || ''
 const { enabled: demoEnabled, getDemoData } = useDemoMode()
 const emptyForm = () => ({ name: '', description: '', category: '通用', subject: '', prompt_template: '', externalUrl: '', is_public: true })
@@ -116,7 +119,9 @@ async function saveTool() {
   } catch (error) { notice.value = error.response?.data?.detail || '保存失败，请检查必填信息后重试。' }
   finally { saving.value = false }
 }
-async function share(tool) { try { shareInfo.value = (await getShareLink(tool.id)).data } catch (error) { notice.value = error.response?.data?.detail || '暂时无法生成分享链接。' } }
+function toLocalDateTime(value) { if (!value) return ''; const date = new Date(value); const pad = value => String(value).padStart(2, '0'); return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}` }
+async function share(tool) { try { shareInfo.value = { ...(await getShareLink(tool.id)).data, tool_id: tool.id }; shareEnabled.value = Boolean(shareInfo.value.share_enabled); shareExpiresAt.value = toLocalDateTime(shareInfo.value.share_expires_at) } catch (error) { notice.value = error.response?.data?.detail || '暂时无法生成分享链接。' } }
+async function saveShareSettings() { if (!shareInfo.value) return; shareSaving.value = true; try { const expiresAt = shareExpiresAt.value ? new Date(shareExpiresAt.value).toISOString() : null; shareInfo.value = { ...(await updateShareSettings(shareInfo.value.tool_id, { enabled: shareEnabled.value, expires_at: expiresAt })).data, tool_id: shareInfo.value.tool_id }; shareExpiresAt.value = toLocalDateTime(shareInfo.value.share_expires_at); notice.value = '分享设置已保存。'; await loadTools() } catch (error) { notice.value = error.response?.data?.detail || '分享设置保存失败。' } finally { shareSaving.value = false } }
 async function copyShare() { try { await navigator.clipboard.writeText(shareInfo.value.share_url); notice.value = '分享链接已复制。' } catch { notice.value = '复制失败，请手动复制链接。' } }
 async function revoke(tool) { if (!window.confirm(`确认撤销"${tool.name}"的公开分享吗？`)) return; try { await revokeShare(tool.id); notice.value = '公开分享已撤销。'; await loadTools() } catch (error) { notice.value = error.response?.data?.detail || '撤销失败。' } }
 async function remove(tool) { if (!window.confirm(`确认删除"${tool.name}"吗？`)) return; try { await deleteTool(tool.id); notice.value = '工具已删除。'; await loadTools() } catch (error) { notice.value = error.response?.data?.detail || '删除失败。' } }
@@ -496,4 +501,9 @@ onMounted(loadTools)
   .form-actions { align-items: flex-start; flex-direction: column; }
   .page-head { margin-top: 12px; }
 }
+
+.share-modal section { display: grid; gap: 12px; }
+.share-setting { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #6b5d3e; font-size: 0.78rem; text-align: left; }
+.share-setting input[type="datetime-local"] { min-height: 36px; padding: 0 8px; }
+.secondary { min-height: 40px; padding: 0 16px; border: 1px solid rgba(196, 180, 154, 0.55); border-radius: 2px; background: transparent; color: #6b5d3e; font: inherit; cursor: pointer; }
 </style>

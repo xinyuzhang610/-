@@ -71,18 +71,28 @@ const routes = [
     component: () => import('../layout/index.vue'),
     meta: { requiresAuth: true, role: 'student' },
     children: [
-      { path: '', redirect: '/student/plaza' },
-      { path: 'plaza', name: 'StudentPlaza', component: () => import('../views/student/Plaza.vue'), meta: { title: '工具广场' } },
+      { path: '', redirect: '/student/guidance' },
+      // The plaza is a public catalogue. AI use, favorites, and records still
+      // pass through their own authenticated routes/APIs.
+      { path: 'plaza', name: 'StudentPlaza', component: () => import('../views/student/Plaza.vue'), meta: { requiresAuth: false, title: '工具广场' } },
       { path: 'chat', name: 'StudentChat', component: () => import('../views/student/Chat.vue'), meta: { title: 'AI 问答' } },
       { path: 'records', name: 'StudentRecords', component: () => import('../views/student/Records.vue'), meta: { title: '学习记录' } },
       { path: 'guidance', name: 'StudentGuidance', component: () => import('../views/student/Guidance.vue'), meta: { title: '兴趣引导' } }
     ]
   },
   {
+    path: '/admin',
+    component: () => import('../layout/index.vue'),
+    meta: { requiresAuth: true, role: 'admin' },
+    children: [
+      { path: '', name: 'AdminHome', component: () => import('../views/admin/Admin.vue'), meta: { title: '运营后台' } },
+    ],
+  },
+  {
     path: '/tool/:id',
     name: 'ToolUse',
     component: () => import('../views/student/ToolUse.vue'),
-    meta: { requiresAuth: true, title: '使用工具' }
+    meta: { requiresAuth: true, role: 'student', title: '使用工具' }
   },
   {
     path: '/share/:shareCode',
@@ -103,15 +113,19 @@ const router = createRouter({ history: createWebHistory(), routes })
 
 router.beforeEach((to) => {
   const token = localStorage.getItem('token')
-  if (to.meta.requiresAuth && !token) return '/login'
   const requiredRole = to.matched.map(record => record.meta.role).find(Boolean)
+  if (to.meta.requiresAuth && !token) {
+    const query = { redirect: to.fullPath }
+    if (requiredRole === 'teacher' || requiredRole === 'student') query.role = requiredRole
+    return { path: '/login', query }
+  }
   const currentRole = localStorage.getItem('userRole')
   if (requiredRole && currentRole && currentRole !== requiredRole && currentRole !== 'admin') {
     return currentRole === 'student' ? '/student/guidance' : '/teacher/home'
   }
   if (to.path === '/login' && token) {
     const role = localStorage.getItem('userRole')
-    return role === 'student' ? '/student/guidance' : '/teacher/home'
+    return role === 'student' ? '/student/guidance' : role === 'admin' ? '/admin' : '/teacher/home'
   }
   return true
 })

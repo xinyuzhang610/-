@@ -26,7 +26,8 @@ async function mountHome() {
       { path: '/teacher/dashboard', component: EmptyView },
       { path: '/student/plaza', component: EmptyView },
       { path: '/student/chat', component: EmptyView },
-      { path: '/student/records', component: EmptyView }
+      { path: '/student/records', component: EmptyView },
+      { path: '/teacher/home', component: EmptyView }
     ]
   })
 

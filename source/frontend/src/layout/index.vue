@@ -3,7 +3,7 @@
     <button v-if="mobileOpen" class="drawer-backdrop" aria-label="关闭导航" @click="mobileOpen=false"></button>
     <aside class="sidebar" :class="{ 'is-open': mobileOpen }">
       <RouterLink class="brand-link" to="/"><BrandMark :compact="collapsed" /></RouterLink>
-      <nav :aria-label="role === 'teacher' ? '教师工作台导航' : '学生学习导航'">
+      <nav :aria-label="role === 'teacher' ? '教师工作台导航' : role === 'admin' ? '管理员后台导航' : '学生学习导航'">
         <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" :aria-current="route.path===item.to?'page':undefined" @click="mobileOpen=false">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path :d="item.icon"/></svg><span>{{ item.label }}</span>
         </RouterLink>
@@ -13,8 +13,8 @@
     <div class="workspace-body">
       <header class="workspace-header">
         <div><button class="mobile-menu" aria-label="打开导航菜单" @click="mobileOpen=true"><span></span><span></span></button><button class="collapse-control" :aria-label="collapsed?'展开侧栏':'收起侧栏'" @click="collapsed=!collapsed">{{ collapsed ? '→' : '←' }}</button></div>
-        <div class="page-context"><span>{{ role==='teacher'?'TEACHER ORBIT':'STUDENT ORBIT' }}</span><strong>{{ route.meta.title || '智教通' }}</strong><em v-if="demoEnabled">{{ demoLabel }}</em></div>
-        <div class="profile"><span>{{ initials }}</span><div><small>{{ role==='teacher'?'教师':'学生' }}</small><strong>{{ userName }}</strong></div></div>
+        <div class="page-context"><span>{{ role==='teacher'?'TEACHER ORBIT':role==='admin'?'ADMIN CONTROL':'STUDENT ORBIT' }}</span><strong>{{ route.meta.title || '智教通' }}</strong><em v-if="demoEnabled">{{ demoLabel }}</em></div>
+        <div class="profile"><span>{{ initials }}</span><div><small>{{ role==='teacher'?'教师':role==='admin'?'管理员':'学生' }}</small><strong>{{ userName }}</strong></div></div>
       </header>
       <main class="workspace-main"><RouterView /></main>
     </div>
@@ -29,8 +29,8 @@ import { useDemoMode } from '../composables/useDemoMode'
 const route=useRoute(),router=useRouter(),store=useUserStore()
 const collapsed=ref(false),mobileOpen=ref(false)
 const { enabled: demoEnabled, label: demoLabel }=useDemoMode()
-const role=computed(()=>route.path.startsWith('/student')?'student':'teacher')
-const userName=computed(()=>store.userName||localStorage.getItem('userName')||(role.value==='teacher'?'教师用户':'探索者'))
+const role=computed(()=>route.path.startsWith('/student')?'student':route.path.startsWith('/admin')?'admin':'teacher')
+const userName=computed(()=>store.userName||localStorage.getItem('userName')||(role.value==='teacher'?'教师用户':role.value==='admin'?'管理员':'探索者'))
 const initials=computed(()=>userName.value.slice(0,1))
 const teacherNav=[
  {to:'/teacher/home',label:'需求引导',icon:'M4 19V5h16v14H4Zm4-9h8M8 14h5'},
@@ -41,7 +41,11 @@ const studentNav=[
  {to:'/student/plaza',label:'工具广场',icon:'M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z'},
  {to:'/student/chat',label:'AI 问答',icon:'M4 5h16v11H8l-4 4V5Z'},
  {to:'/student/records',label:'学习轨迹',icon:'M5 19V5m0 14h15M8 15l3-4 3 2 5-7'}]
-const navItems=computed(()=>role.value==='teacher'?teacherNav:studentNav)
+const adminNav=[
+ {to:'/admin',label:'运营后台',icon:'M4 5h16v14H4zM8 9h8M8 13h5'},
+ {to:'/teacher/tools',label:'工具总览',icon:'M14 6 18 2l4 4-4 4M3 21l8-8m2-7 5 5M5 3l4 4'},
+]
+const navItems=computed(()=>role.value==='teacher'?teacherNav:role.value==='admin'?adminNav:studentNav)
 function logout(){store.logout();router.push('/login')}
 function onKey(e){if(e.key==='Escape')mobileOpen.value=false}
 onMounted(()=>document.addEventListener('keydown',onKey));onBeforeUnmount(()=>document.removeEventListener('keydown',onKey))

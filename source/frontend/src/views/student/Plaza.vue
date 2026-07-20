@@ -1,8 +1,9 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getPlaza } from '../../api/plaza'
-import { getRecommendedTools } from '../../api/tools'
+import { getRecommendation } from '../../api/recommend'
+import { listFavorites, addFavorite, removeFavorite } from '../../api/favorites'
 import StatusState from '../../components/ui/StatusState.vue'
 import ToolCard from '../../components/student/ToolCard.vue'
 import VintageRibbonTitle from '../../components/vintage/VintageRibbonTitle.vue'
@@ -11,36 +12,70 @@ import VintageOrnament from '../../components/vintage/VintageOrnament.vue'
 import { useDemoMode } from '../../composables/useDemoMode'
 
 const categories = ref([]), tools = ref([]), hotTools = ref([])
-const category = ref(''), search = ref(''), loading = ref(true), error = ref('')
+const category = ref(''), search = ref(''), sort = ref('hot'), loading = ref(true), error = ref('')
 const recommendation = ref('')
+const favoriteIds = ref(new Set())
 const { enabled: demoEnabled, getDemoData } = useDemoMode()
 const route = useRoute()
 const router = useRouter()
+const canFavorite = computed(() => localStorage.getItem('userRole') === 'student' && Boolean(localStorage.getItem('token')))
+const isFavorite = id => favoriteIds.value.has(id)
+async function loadFavorites() {
+  if (!canFavorite.value) { favoriteIds.value = new Set(); return }
+  try {
+    const { data } = await listFavorites({ page: 1, page_size: 100 })
+    favoriteIds.value = new Set((data.items || []).map(item => item.id))
+  } catch { favoriteIds.value = new Set() }
+}
 async function load() {
   loading.value = true; error.value = ''
   try {
     if (demoEnabled.value) {
       const demo = getDemoData('plaza'); categories.value = demo.categories; hotTools.value = demo.hot_tools
       tools.value = demo.tools.filter(item => (!category.value || item.category === category.value) && (!search.value.trim() || `${item.name} ${item.description}`.includes(search.value.trim())))
+      await loadFavorites()
       return
     }
-    if (route.query.subject && !search.value.trim()) {
-      const { data } = await getRecommendedTools(category.value, route.query.subject, route.query.difficulty || route.query.approach || '兴趣激发')
+    if (route.query.subject && route.query.difficulty && route.query.approach && !search.value.trim()) {
+      const { data } = await getRecommendation({
+        step: 3,
+        category: category.value || undefined,
+        subject: route.query.subject,
+        difficulty: route.query.difficulty,
+        approach: route.query.approach,
+      })
       tools.value = data.tools || []
       categories.value = [{ value: '文科', label: '文科' }, { value: '理科', label: '理科' }, { value: '通用', label: '通用' }]
       hotTools.value = tools.value.slice(0, 3)
-      recommendation.value = `根据"${route.query.difficulty || '当前困惑'} · ${route.query.subject} · ${route.query.approach || '学习方式'}"为你匹配`
+      recommendation.value = data.reason || `根据“${route.query.difficulty} · ${route.query.subject} · ${route.query.approach}”为你匹配`
+      await loadFavorites()
       return
     }
     recommendation.value = ''
-    const { data } = await getPlaza({ category: category.value, search: search.value.trim() })
+    const { data } = await getPlaza({ category: category.value, search: search.value.trim(), sort: sort.value })
     categories.value = data.categories || []; tools.value = data.tools || []; hotTools.value = data.hot_tools || []
+    await loadFavorites()
   } catch (cause) { error.value = cause?.response?.data?.detail || '工具广场暂时无法连接，请稍后重试。' }
   finally { loading.value = false }
 }
 async function pick(value) { category.value = category.value === value ? '' : value; if (route.query.subject) await router.replace({ query: {} }); await load() }
-onMounted(() => { category.value = route.query.subject === '语文' || route.query.subject === '英语' || route.query.subject === '历史' ? '文科' : ['数学', '物理', '化学'].includes(route.query.subject) ? '理科' : ''; load() })
-watch(() => route.query, () => { category.value = route.query.subject === '语文' || route.query.subject === '英语' || route.query.subject === '历史' ? '文科' : ['数学', '物理', '化学'].includes(route.query.subject) ? '理科' : ''; load() }, { deep: true })
+async function toggleFavorite(id) {
+  if (!canFavorite.value) { await router.push({ path: '/login', query: { role: 'student', redirect: route.fullPath } }); return }
+  try {
+    if (isFavorite(id)) {
+      await removeFavorite(id)
+      favoriteIds.value = new Set([...favoriteIds.value].filter(item => item !== id))
+    } else {
+      await addFavorite(id)
+      favoriteIds.value = new Set([...favoriteIds.value, id])
+    }
+  } catch (cause) { error.value = cause?.response?.data?.detail || '收藏状态更新失败，请稍后重试。' }
+}
+function subjectCategory(subject) {
+  return ['语文', '英语', '历史', '地理', '政治'].includes(subject) ? '文科' : ['数学', '物理', '化学', '生物', '信息技术'].includes(subject) ? '理科' : ''
+}
+onMounted(() => { category.value = subjectCategory(route.query.subject); load() })
+watch(() => route.query, () => { category.value = subjectCategory(route.query.subject); load() }, { deep: true })
 </script>
 
 <template>
@@ -57,6 +92,7 @@ watch(() => route.query, () => { category.value = route.query.subject === '语�
 
     <form class="search-panel" role="search" @submit.prevent="load">
       <label aria-label="搜索工具"><span>搜索工具</span><input v-model="search" type="search" placeholder="输入工具名称或能力关键词" /></label>
+      <select v-model="sort" aria-label="工具排序" @change="load"><option value="hot">按热度</option><option value="latest">按最新</option></select>
       <button type="submit">搜索</button>
     </form>
 
@@ -69,15 +105,17 @@ watch(() => route.query, () => { category.value = route.query.subject === '语�
     <StatusState v-else-if="error" type="error" title="工具星图暂时失联" :description="error" @retry="load" />
     <StatusState v-else-if="!tools.length" title="没有匹配的工具" description="调整分类或搜索词，再探索一次。" />
 
-    <section v-else aria-labelledby="tools-title">
-      <div class="section-heading">
-        <h2 id="tools-title">探索工具</h2>
-        <span>{{ tools.length }} 个结果</span>
-      </div>
-      <div class="tool-grid">
-        <ToolCard v-for="tool in tools" :key="tool.id" :tool="tool" :hot="hotTools.some(item => item.id === tool.id)" />
-      </div>
-    </section>
+    <template v-else>
+      <section v-if="hotTools.length && !route.query.subject" class="hot-section" aria-labelledby="hot-title">
+        <div class="section-heading"><h2 id="hot-title">热门工具</h2><span>使用量前 5</span></div>
+        <div class="hot-grid"><ToolCard v-for="tool in hotTools.slice(0, 5)" :key="`hot-${tool.id}`" :tool="tool" hot :favorited="isFavorite(tool.id)" :can-favorite="canFavorite" @toggle-favorite="toggleFavorite" /></div>
+      </section>
+      <section v-if="tools.length" aria-labelledby="tools-title">
+        <div class="section-heading"><h2 id="tools-title">探索工具</h2><span>{{ tools.length }} 个结果</span></div>
+        <div class="tool-grid"><ToolCard v-for="tool in tools" :key="tool.id" :tool="tool" :hot="hotTools.some(item => item.id === tool.id)" :favorited="isFavorite(tool.id)" :can-favorite="canFavorite" @toggle-favorite="toggleFavorite" /></div>
+      </section>
+      <StatusState v-else title="没有匹配的工具" description="调整分类或搜索词，再探索一次。" />
+    </template>
   </main>
 </template>
 
@@ -135,6 +173,33 @@ watch(() => route.query, () => { category.value = route.query.subject === '语�
   margin-top: 1.25rem;
 }
 
+.search-panel select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: #4a4333;
+  font: inherit;
+  outline: 0;
+}
+
+.search-panel select option { color: #111; }
+
+.tool-grid,
+.hot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.hot-section { margin-bottom: 38px; }
+.hot-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+@media (max-width: 1200px) {
+  .hot-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 /* 推荐标签 */
 .recommendation {
   position: relative;
@@ -155,7 +220,7 @@ watch(() => route.query, () => { category.value = route.query.subject === '语�
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr 150px auto;
   max-width: 860px;
   margin: 28px 0 18px;
   padding: 5px;
@@ -279,6 +344,6 @@ watch(() => route.query, () => { category.value = route.query.subject === '语�
   .plaza-page { padding: 24px 16px 60px; }
   .search-panel { grid-template-columns: 1fr; }
   .search-panel button { width: 100%; }
-  .tool-grid { grid-template-columns: 1fr; }
+  .tool-grid, .hot-grid { grid-template-columns: 1fr; }
 }
 </style>

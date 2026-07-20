@@ -1,18 +1,31 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { getMyUsage } from '../../api/usage'
+import { getMyUsage, getStudentStats } from '../../api/usage'
 import StatusState from '../../components/ui/StatusState.vue'
 import VintageRibbonTitle from '../../components/vintage/VintageRibbonTitle.vue'
 import VintageDivider from '../../components/vintage/VintageDivider.vue'
 import VintageOrnament from '../../components/vintage/VintageOrnament.vue'
 import { useDemoMode } from '../../composables/useDemoMode'
 
-const logs = ref([]), loading = ref(true), error = ref('')
+const logs = ref([]), stats = ref(null), loading = ref(true), error = ref(''), selected = ref(null)
 const { enabled: demoEnabled, getDemoData } = useDemoMode()
 const uniqueTools = computed(() => new Set(logs.value.map(item => item.tool_id)).size)
 const activeDays = computed(() => new Set(logs.value.map(item => item.created_at?.slice(0, 10)).filter(Boolean)).size)
 const formatTime = value => value ? new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : '时间未知'
-async function load() { loading.value = true; error.value = ''; try { if (demoEnabled.value) { logs.value = getDemoData('studentHistory'); return } const { data } = await getMyUsage(); logs.value = data?.items || [] } catch (cause) { error.value = cause?.response?.data?.detail || '学习记录暂时无法读取。' } finally { loading.value = false } }
+async function load() {
+  loading.value = true; error.value = ''
+  try {
+    if (demoEnabled.value) {
+      logs.value = getDemoData('studentHistory')
+      stats.value = { total_interactions: logs.value.length, distinct_tools: new Set(logs.value.map(item => item.tool_id)).size, consecutive_days: new Set(logs.value.map(item => item.created_at?.slice(0, 10))).size }
+      return
+    }
+    const [{ data: usage }, { data: studentStats }] = await Promise.all([getMyUsage(1, 100), getStudentStats()])
+    logs.value = usage?.items || []
+    stats.value = studentStats
+  } catch (cause) { error.value = cause?.response?.data?.detail || '学习记录暂时无法读取。' }
+  finally { loading.value = false }
+}
 onMounted(load)
 </script>
 
@@ -33,15 +46,15 @@ onMounted(load)
       <section class="metrics" aria-label="学习记录指标">
         <article aria-label="使用次数">
           <span>使用次数</span>
-          <strong>{{ logs.length }}</strong>
+          <strong>{{ stats?.total_interactions ?? logs.length }}</strong>
         </article>
         <article aria-label="使用工具数">
           <span>使用工具数</span>
-          <strong>{{ uniqueTools }}</strong>
+          <strong>{{ stats?.distinct_tools ?? uniqueTools }}</strong>
         </article>
         <article aria-label="活跃学习日">
-          <span>活跃学习日</span>
-          <strong>{{ activeDays }}</strong>
+          <span>连续学习日</span>
+          <strong>{{ stats?.consecutive_days ?? activeDays }}</strong>
         </article>
       </section>
 
@@ -52,15 +65,25 @@ onMounted(load)
         <ol>
           <li v-for="log in logs" :key="log.id">
             <time :datetime="log.created_at">{{ formatTime(log.created_at) }}</time>
-            <div>
-              <span>工具 #{{ log.tool_id }}</span>
-              <h3>{{ log.input_text || '未记录输入内容' }}</h3>
-              <p v-if="log.output_text">{{ log.output_text }}</p>
-            </div>
+              <button type="button" class="record-button" @click="selected = log">
+                <span>工具 #{{ log.tool_id }}</span>
+                <h3>{{ log.input_text || '未记录输入内容' }}</h3>
+                <p v-if="log.output_text">{{ log.output_text }}</p>
+                <strong>查看完整问答 →</strong>
+              </button>
           </li>
         </ol>
       </section>
     </template>
+    <div v-if="selected" class="record-modal" role="dialog" aria-modal="true" @click.self="selected = null">
+      <section>
+        <button class="modal-close" type="button" aria-label="关闭" @click="selected = null">×</button>
+        <span>学习记录详情</span>
+        <h2>{{ selected.input_text || '未记录输入内容' }}</h2>
+        <p class="modal-meta">{{ formatTime(selected.created_at) }} · 工具 #{{ selected.tool_id }}</p>
+        <div class="modal-copy"><h3>AI 输出</h3><p>{{ selected.output_text || '没有保存输出内容。' }}</p></div>
+      </section>
+    </div>
   </main>
 </template>
 
@@ -238,4 +261,51 @@ onMounted(load)
   .metrics { grid-template-columns: 1fr; }
   .timeline li { grid-template-columns: 1fr; gap: 8px; }
 }
+
+.record-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.record-button strong {
+  display: block;
+  margin-top: 9px;
+  color: #8b6f47;
+  font-size: 0.75rem;
+}
+
+.record-modal {
+  position: fixed;
+  z-index: 30;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(4, 10, 8, 0.76);
+  backdrop-filter: blur(12px);
+}
+
+.record-modal section {
+  position: relative;
+  width: min(100%, 720px);
+  max-height: 80vh;
+  overflow: auto;
+  padding: 32px;
+  border: 1px solid #b8a16e;
+  border-radius: 2px;
+  background: #faf8f2;
+  color: #4a4333;
+}
+
+.record-modal section > span { color: #8b6f47; font-size: 0.72rem; letter-spacing: 0.14em; }
+.record-modal h2 { margin: 12px 0; font: 500 1.6rem var(--font-display); }
+.modal-meta { color: #8b7e60; font-size: 0.8rem; }
+.modal-copy { margin-top: 24px; padding-top: 18px; border-top: 1px solid rgba(196, 180, 154, 0.4); }
+.modal-copy h3 { color: #6e7d70; }
+.modal-copy p { white-space: pre-wrap; color: #6b5d3e; line-height: 1.8; }
+.modal-close { position: absolute; right: 14px; top: 8px; border: 0; background: transparent; color: #6b5d3e; font-size: 2rem; cursor: pointer; }
 </style>

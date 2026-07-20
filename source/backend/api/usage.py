@@ -34,7 +34,36 @@ def _dashboard(db, user, days, tool_id):
         count = base.filter(func.date(UsageLog.created_at) == start).count()
         trend.append({"date": start.isoformat(), "count": count})
     ranking = db.query(Tool.id, Tool.name, func.count(UsageLog.id).label("count")).outerjoin(UsageLog, (UsageLog.tool_id == Tool.id) & (UsageLog.status == "completed") & (UsageLog.created_at >= since)).filter(Tool.id.in_(ids or [-1])).group_by(Tool.id, Tool.name).order_by(func.count(UsageLog.id).desc()).limit(10).all()
-    recent = base.order_by(UsageLog.created_at.desc()).limit(20).all()
+    recent_rows = (
+        db.query(UsageLog, User.name, User.username, Tool.name)
+        .outerjoin(User, User.id == UsageLog.user_id)
+        .outerjoin(Tool, Tool.id == UsageLog.tool_id)
+        .filter(
+            UsageLog.tool_id.in_(ids or [-1]),
+            UsageLog.status == "completed",
+            UsageLog.created_at >= since,
+        )
+        .order_by(UsageLog.created_at.desc())
+        .limit(20)
+        .all()
+    )
+    recent = [
+        {
+            "id": log.id,
+            "tool_id": log.tool_id,
+            "tool_name": tool_name,
+            "user_id": log.user_id,
+            "user_name": user_name or username or ("访客" if log.user_id is None else None),
+            "input_text": log.input_text,
+            "output_text": log.output_text,
+            "session_id": log.session_id,
+            "status": log.status,
+            "latency_ms": log.latency_ms,
+            "created_at": log.created_at,
+            "completed_at": log.completed_at,
+        }
+        for log, user_name, username, tool_name in recent_rows
+    ]
     total_tools = len(ids)
     return {"days": days, "tool_id": tool_id, "total_tools": total_tools, "total_usage": total, "today_usage": trend[-1]["count"], "distinct_students": distinct_students, "total_users": distinct_students, "weekly_trend": trend, "trend": trend, "top_tools": [{"id": row.id, "name": row.name, "count": row.count, "percentage": round(row.count * 100 / total, 2) if total else 0} for row in ranking], "recent_logs": recent}
 

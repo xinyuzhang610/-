@@ -1,18 +1,35 @@
 <script setup>
-defineProps({ tool: { type: Object, required: true }, hot: Boolean })
+defineProps({
+  tool: { type: Object, required: true },
+  hot: Boolean,
+  favorited: Boolean,
+  canFavorite: Boolean,
+})
+const emit = defineEmits(['toggle-favorite'])
 </script>
 
 <template>
-  <RouterLink class="tool-card" :to="`/tool/${tool.id}`" :aria-label="`使用工具：${tool.name}`">
-    <span class="tool-card__glyph" aria-hidden="true">
-      <svg viewBox="0 0 32 32"><path d="M16 3 27 9v14l-11 6L5 23V9l11-6Z"/><path d="m5 9 11 7 11-7M16 16v13"/></svg>
-    </span>
-    <span v-if="hot" class="tool-card__hot">热门</span>
-    <span class="tool-card__category">{{ tool.category || '通用' }}</span>
-    <h3>{{ tool.name }}</h3>
-    <p>{{ tool.description || '等待工具创建者补充说明。' }}</p>
-    <span class="tool-card__meta">使用 {{ tool.usage_count || 0 }} 次 <b>进入工具 →</b></span>
-  </RouterLink>
+  <article class="tool-card">
+    <RouterLink class="tool-card__link" :to="`/tool/${tool.id}`" :aria-label="`使用工具：${tool.name}`">
+      <span class="tool-card__glyph" aria-hidden="true">
+        <svg viewBox="0 0 32 32"><path d="M16 3 27 9v14l-11 6L5 23V9l11-6Z"/><path d="m5 9 11 7 11-7M16 16v13"/></svg>
+      </span>
+      <span v-if="hot" class="tool-card__hot">热门</span>
+      <span class="tool-card__category">{{ tool.category || '通用' }}</span>
+      <h3>{{ tool.name }}</h3>
+      <p>{{ tool.description || '等待工具创建者补充说明。' }}</p>
+      <span class="tool-card__meta">使用 {{ tool.usage_count || 0 }} 次 <b>进入工具 →</b></span>
+    </RouterLink>
+    <button
+      v-if="canFavorite"
+      class="tool-card__favorite"
+      type="button"
+      :aria-pressed="favorited"
+      @click="emit('toggle-favorite', tool.id)"
+    >
+      {{ favorited ? '★ 已收藏' : '☆ 收藏工具' }}
+    </button>
+  </article>
 </template>
 
 <style scoped>
@@ -140,5 +157,32 @@ defineProps({ tool: { type: Object, required: true }, hot: Boolean })
 .tool-card__meta b {
   color: #8b6f47;
   font-family: var(--font-display);
+}
+
+.tool-card__link {
+  display: flex;
+  min-height: 190px;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.tool-card__favorite {
+  align-self: flex-start;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(184, 161, 110, 0.45);
+  border-radius: 2px;
+  background: transparent;
+  color: #8b6f47;
+  font: inherit;
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.tool-card__favorite[aria-pressed="true"] {
+  background: rgba(184, 161, 110, 0.14);
 }
 </style>

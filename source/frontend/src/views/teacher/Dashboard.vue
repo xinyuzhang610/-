@@ -1,9 +1,15 @@
 <template>
   <div class="dashboard-page vintage-theme">
-    <header>
-      <VintageRibbonTitle label="LEARNING SIGNALS" />
-      <h1>数据洞察</h1>
-      <p>从真实使用记录中，看见工具如何进入课堂。</p>
+    <header class="dashboard-head">
+      <div>
+        <VintageRibbonTitle label="LEARNING SIGNALS" />
+        <h1>数据洞察</h1>
+        <p>从真实使用记录中，看见工具如何进入课堂。</p>
+      </div>
+      <div class="dashboard-actions">
+        <label>时间范围<select v-model="days" @change="loadDashboard"><option :value="7">近 7 天</option><option :value="30">近 30 天</option></select></label>
+        <button type="button" @click="downloadDashboard">导出 CSV</button>
+      </div>
     </header>
     <VintageDivider />
 
@@ -62,14 +68,15 @@ import MetricCard from '../../components/data/MetricCard.vue'
 import StatusState from '../../components/ui/StatusState.vue'
 import VintageDivider from '../../components/vintage/VintageDivider.vue'
 import VintageRibbonTitle from '../../components/vintage/VintageRibbonTitle.vue'
-import { getDashboard } from '../../api/usage'
+import { getDashboard, exportDashboard } from '../../api/usage'
 import { useDemoMode } from '../../composables/useDemoMode'
-const dashboard=ref(null),loading=ref(true),errorMessage=ref('')
+const dashboard=ref(null),loading=ref(true),errorMessage=ref(''),days=ref(7)
 const {enabled:demoEnabled,getDemoData}=useDemoMode()
 const maxCount=computed(()=>Math.max(1,...(dashboard.value?.weekly_trend||[]).map(i=>i.count)))
 const barHeight=count=>`${Math.max(5,(count/maxCount.value)*100)}%`
 const formatTime=value=>value?new Intl.DateTimeFormat('zh-CN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(value)):'时间未知'
-async function loadDashboard(){loading.value=true;errorMessage.value='';try{if(demoEnabled.value){dashboard.value=getDemoData('dashboard');return}const {data}=await getDashboard();dashboard.value=data}catch(e){dashboard.value=null;errorMessage.value=e.response?.data?.detail||'无法连接统计服务，请确认后端已启动。'}finally{loading.value=false}}
+async function loadDashboard(){loading.value=true;errorMessage.value='';try{if(demoEnabled.value){dashboard.value=getDemoData('dashboard');return}const {data}=await getDashboard({ days: days.value });dashboard.value=data}catch(e){dashboard.value=null;errorMessage.value=e.response?.data?.detail||'无法连接统计服务，请确认后端已启动。'}finally{loading.value=false}}
+async function downloadDashboard(){try{const {data}=await exportDashboard({days:days.value});const url=URL.createObjectURL(data);const link=document.createElement('a');link.href=url;link.download=`dashboard-${days.value}d.csv`;link.click();URL.revokeObjectURL(url)}catch(e){errorMessage.value=e.response?.data?.detail||'CSV 导出失败，请稍后重试。'}}
 onMounted(loadDashboard)
 </script>
 
@@ -125,6 +132,13 @@ onMounted(loadDashboard)
   z-index: 1;
   margin-bottom: 2rem;
 }
+
+.dashboard-head { display: flex; align-items: end; justify-content: space-between; gap: 20px; }
+.dashboard-actions { display: flex; align-items: end; gap: 10px; position: relative; z-index: 1; }
+.dashboard-actions label { display: grid; gap: 6px; color: #6b5d3e; font-size: 0.75rem; }
+.dashboard-actions select, .dashboard-actions button { min-height: 42px; padding: 0 12px; border: 1px solid rgba(196, 180, 154, 0.5); border-radius: 2px; background: rgba(250, 248, 242, 0.7); color: #4a4333; font: inherit; }
+.dashboard-actions select option { color: #111; }
+.dashboard-actions button { border-color: #b8a16e; background: #b8a16e; color: #3d3526; font-weight: 700; cursor: pointer; }
 
 .metrics {
   display: grid;
@@ -270,6 +284,9 @@ onMounted(loadDashboard)
 }
 
 @media (max-width: 800px) {
+  .dashboard-head { align-items: flex-start; flex-direction: column; }
+  .dashboard-actions { align-items: stretch; width: 100%; }
+  .dashboard-actions label { flex: 1; }
   .metrics, .dashboard-grid { grid-template-columns: 1fr; }
   .bars { height: 220px; }
   .record-list > div { grid-template-columns: 1fr; }
