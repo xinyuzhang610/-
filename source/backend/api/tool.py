@@ -181,6 +181,10 @@ def update_tool(tool_id: int, tool_update: ToolUpdate, db: Session = Depends(get
         raise HTTPException(status_code=422, detail="广场状态无效")
     for key, value in update_data.items():
         setattr(tool, key, value)
+    if "is_public" in update_data:
+        tool.plaza_status = "published" if tool.is_public else "unlisted"
+        if not tool.is_public:
+            tool.share_enabled = False
     if "plaza_status" in update_data:
         tool.is_public = tool.plaza_status == "published"
     write_audit(db, "update", "tool", tool.id, actor_id=current_user.id, details={"fields": sorted(update_data)})

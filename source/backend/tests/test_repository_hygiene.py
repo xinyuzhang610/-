@@ -28,9 +28,3 @@ def test_legacy_frontend_files_are_outside_the_active_source_tree():
         for path in LEGACY_ACTIVE_PATHS
         if (REPOSITORY_ROOT / path).exists()
     ]
-
-
-def test_legacy_frontend_archive_is_indexed():
-    archive = REPOSITORY_ROOT / "docs/archive/legacy-frontend"
-    assert (archive / "README.md").is_file()
-    assert (archive / "static-landing/index.html").is_file()

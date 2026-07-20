@@ -8,7 +8,10 @@ class ConversationSession(Base):
     __tablename__ = "conversation_sessions"
 
     id = Column(String(64), primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    # Public share links may create an anonymous in-session conversation. The
+    # usage log still keeps user_id nullable so the teacher dashboard can
+    # distinguish guest usage from signed-in students.
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     tool_id = Column(Integer, ForeignKey("tools.id"), nullable=True, index=True)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     last_activity_at = Column(DateTime, nullable=False, server_default=func.now(), index=True)

@@ -54,7 +54,7 @@ onBeforeUnmount(() => cancelAnimationFrame(raf))
 <style scoped>
 .orbit { min-height: 100svh; display: flex; align-items: center; padding: clamp(5rem, 10vw, 9rem) 0; overflow: hidden; background: #f5f0e8; color: var(--color-ink); }
 .orbit__heading { position: relative; z-index: 2; max-width: 50rem; }
-.orbit__heading p { font-family: 'Ma Shan Zheng', cursive; font-size: 2.2rem; letter-spacing: .05em; transform: translateY(-3rem); background: linear-gradient(135deg, var(--gold-200) 0%, var(--gold-400) 40%, var(--gold-600) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.orbit__heading p { font-family: 'Ma Shan Zheng', cursive; font-size: 2.2rem; letter-spacing: .05em; transform: translateY(-3rem); background: linear-gradient(135deg, #3a5a3a 0%, #1a3a24 35%, #2a5a38 65%, #4a6840 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 h2 { margin-top: 1rem; font-family: var(--font-title); font-size: clamp(2.35rem, 4vw, 4.35rem); font-weight: 500; line-height: 1.12; letter-spacing: -.035em; }
 @media (hover: hover) { h2 { transition: transform .3s var(--ease-out); cursor: default; } h2:hover { transform: scale(1.04); } }
 .orbit__stage { position: relative; height: 70vh; min-height: 32rem; margin-top: -1rem; }
