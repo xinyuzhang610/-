@@ -1,7 +1,8 @@
 export const demoData = {
   recommendations: { tools: [
     { id: 1, name: '古诗词趣味赏析', description: '将意象、背景与表达手法组织为课堂探索线索。', subject: '语文' },
-    { id: 7, name: '公式推导助手', description: '用分步推演帮助学生理解公式从何而来。', subject: '数学' }
+    { id: 6, name: '诗词飞花令', description: '以飞花令游戏激发古诗词兴趣。', subject: '语文' },
+    { id: 4, name: '阅读理解辅助', description: '帮学生抓住文本关键信息和中心思想。', subject: '语文' }
   ] },
   tools: { items: [
     { id: 1, name: '古诗词趣味赏析', description: '从意象与时代背景切入古诗词。', category: '文科', subject: '语文', usage_count: 128, is_preset: true },

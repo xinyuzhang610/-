@@ -5,7 +5,7 @@ import { generatedAssets } from '../../assets/generated/asset-manifest'
 
 const teacherSteps = [
   { label: '登录', to: '/login?role=teacher' },
-  { label: '需求引导', to: '/login?role=teacher' },
+  { label: '需求引导', to: '/teacher/home' },
   { label: '工具管理', to: '/teacher/tools' },
   { label: '数据洞察', to: '/teacher/dashboard' }
 ]
